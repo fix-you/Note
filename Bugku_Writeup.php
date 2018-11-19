@@ -1095,3 +1095,42 @@
 	}
 	stream_wrapper_unregister ("zip");
 	?>
+
+# 这是一个神奇的登录框
+	直接sqlmap的post注入搞定了
+
+# ssi
+	EIS2018题感觉不错加上了
+	http://httpd.apache.org/docs/current/howto/ssi.html
+	https://www.owasp.org/index.php/Server-Side_Includes_(SSI)_Injection
+	https://blog.csdn.net/wutianxu123/article/details/82724637
+	https://www.secpulse.com/archives/66934.html
+	<?php
+	class TinySSI {
+		public function parse($content) {
+			$parsed = $connect;
+			/** #include **/
+			$parsed = preg_replace_callback('|<!--#include virtual="(.*?)"(\s)*-->|',
+			function ($matches) { 
+				$output = file_get_contents("./" . $matches[1]); 
+				return $output; 
+			}, $parsed); 
+			return $parsed; 
+		} 
+	}
+	?>
+	<?php
+	echo "Flag is in the file 'flag' in this path\n";
+	require_once('ssi.php');
+	$parser = new TinySSI;
+	if(isset($_GET['name'])){
+		echo("Your name is " . $parser->parse($_GET['name']));
+		exit();
+	}
+	?>
+	<!--#include virtual="flag" -->
+
+
+# sql注入2
+	全都tm过滤了绝望吗？
+	提示 !,!=,=,+,-,^,%
