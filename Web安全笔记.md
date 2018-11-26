@@ -1,5 +1,43 @@
 # Web安全笔记
 
+## 每天学点新东西
+
+### OAuth2.0
+
+**作用** ：让(第三方)客户端安全可控地获取用户的授权
+
+#### 名词定义
+
++   Third-party application：第三方应用程序，又称为客户端
++   HTTP service：HTTP服务提供商
++   Resource Owner：资源所有者，又称用户
++   User Agent：用户代理，例如，浏览器
++   Authorization server：认证服务器
++   Resource server：资源服务器
+
+#### 运行流程
+
+![avatar](http://www.ruanyifeng.com/blogimg/asset/2014/bg2014051203.png)
+
+​	（A）用户打开客户端以后，客户端要求用户给予授权
+
+​	（B）用户同意给予客户端授权
+
+​	（C）客户端使用上一步获得的授权，想认证服务器申请令牌
+
+​	（D）认证服务器对客户端进行认证以后，确认无误，同意发放令牌
+
+​	（E）客户端使用令牌，向资源服务器申请获取资源
+
+​	（F）资源服务器确认令牌无误，同意客户端开放资源
+
+### 客户端的授权模式
+
++   授权码模式（authorization code）
++   简化模式（implicit）
++   密码模式（resource owner password credentials）
++   客户端模式（client credentials）
+
 ## SQL 注入
 
 **本质**：把用户输入的数据当代码来执行，违背了“数据与代码分离”的原则。
@@ -327,7 +365,27 @@ about hello.php index.php this_is_th3_F14g_154f65sd4g35f4d6f43.txt upload upload
 
 +   魔法哈希 0e开头，sha1(), md5()无法处理数组
 
+    如果要找出 `0e` 开头的 hash 碰撞，可以用如下代码
+
+    ```php
+    <?php
+     
+    $salt = 'vunp';
+    $hash = '0e612198634316944013585621061115';
+     
+    for ($i=1; $i<100000000000; $i++) {
+        if (md5($salt . $i) == $hash) {
+            echo $i;
+            break;
+        }
+    }
+     
+    echo 'done';
+    ```
+
     常见的payload:
+
+    ==md5==
 
     ​        QNKCDZO
 
@@ -373,6 +431,48 @@ about hello.php index.php this_is_th3_F14g_154f65sd4g35f4d6f43.txt upload upload
 
     ​        0e220463095855511507588041205815
 
+    ==sha1==	
+    ​	10932435112: 0e07766915004133176347055865026311692244
+    ​	aaroZmOk: 0e66507019969427134894567494305185566735
+    ​	aaK1STfY: 0e76658526655756207688271159624026011393
+    ​	aaO8zKZF: 0e89257456677279068558073954252716165668
+    ​	aa3OFF9m: 0e36977786278517984959260394024281014729
+
+    ==crc32==
+
+    ​	6586: 0e817678
+
+    两个 md5 一样的字符串
+
+    ```python
+    from binascii import unhexlify
+    from hashlib import md5
+    from future.moves.urllib.parse import quote
+    
+    input1 = 'Oded Goldreich\nOded Goldreich\nOded Goldreich\nOded Go' + unhexlify(
+    'd8050d0019bb9318924caa96dce35cb835b349e144e98c50c22cf461244a4064bf1afaecc5820d428ad38d6bec89a5ad51e29063dd79b16cf67c12978647f5af123de3acf844085cd025b956')
+    
+    print(quote(input1))
+    print md5(input1).hexdigest()
+    
+    input2 = 'Neal Koblitz\nNeal Koblitz\nNeal Koblitz\nNeal Koblitz\n' + unhexlify('75b80e0035f3d2c909af1baddce35cb835b349e144e88c50c22cf461244a40e4bf1afaecc5820d428ad38d6bec89a5ad51e29063dd79b16cf6fc11978647f5af123de3acf84408dcd025b956')
+    print md5(input2).hexdigest()
+    print(quote(input2))
+    ```
+
+    另外一组 md5 一样的字符串
+
+    ```python
+    from array import array
+    from hashlib import md5
+    input1 = array('I', [0x6165300e,0x87a79a55,0xf7c60bd0,0x34febd0b,0x6503cf04,0x854f709e,0xfb0fc034,0x874c9c65,0x2f94cc40,0x15a12deb,0x5c15f4a3,0x490786bb,0x6d658673,0xa4341f7d,0x8fd75920,0xefd18d5a])
+    input2 = array('I', [x^y for x,y in zip(input1, [0, 0, 0, 0, 0, 1<<10, 0, 0, 0, 0, 1<<31, 0, 0, 0, 0, 0])])
+    print(input1 == input2) # False
+    print(md5(input1).hexdigest()) # cee9a457e790cf20d4bdaa6d69f01e41
+    print(md5(input2).hexdigest()) # cee9a457e790cf20d4bdaa6d69f01e41
+    ```
+
+
 **伪协议**
 
 +   php://filter – 对本地磁盘文件进行读写
@@ -402,6 +502,29 @@ DATA伪协议，分号和逗号有争议
 +   data:image/jpeg;base64,base64编码的png图片数据
 
 >   glob:// 查找匹配的文件路径模式
+
+
+
+**文件操作相关**
+
+```php
+// 列出目录
+scandir('/xxx')  // . 当前目录 .. 上级目录 / 根目录
+    
+// 输出文件内容
+show_source('flag.php');
+highlight_file('flag.php');
+var_dump(file('flag.php'));  // 以下两个以数组形式输出
+print_r(file('flag.php'));
+
+// 读取文件内容
+file_get_contents('flag.php');
+file_get_contents('http://www.baidu.com')  // 读取远程内容，可用作爬虫
+```
+
+
+
+
 
 ## 后台登录类
 
