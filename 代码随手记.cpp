@@ -296,20 +296,37 @@ int main(){
 //#include <bits/stdc++.h>
 //}}}
 using namespace std;
+
 typedef long long ll;
+typedef long double ld;
 typedef double db;
 typedef pair<int,int> pii;
 typedef vector<int> vi;
+
 #define mp make_pair
 #define fi first
 #define se second
-#define all(x) (x).begin(),(x).end()
+#define sf scanf
+#define pf printf
+#define pn printf("\n")
+#define ls l,mid,rt<<1
+#define rs mid+1,r,rt<<1|1
 #define pb push_back
+#define all(x) (x).begin(),(x).end()
 #define de(x) cout << #x << "=" << x << endl
+#define dd(x) cout<< #x<<" = "<<x<<" "
 #define rep(i,a,b) for(int i=a;i<(b);++i)
+#define per(i,a,n) for (int i=n-1;i>=a;i--)
+#define mem(a,b) memset(a,b,sizeof(a))
 #define sz(x) (int)(x).size()
 
+const int INF=0x3f3f3f3f;
+const double eps=1e-8;
+const double PI=acos(-1.0);
 const int N = 101010;
+
+int sgn(double x){if(fabs(x)<eps)return 0;if(x<0)return -1;else return 1;}
+ll gcd(ll a,ll b){return b==0?a:gcd(b,a%b);}
 
 // fast-pow
 int Pow(ll x,ll t,int p) {ll r=1;for(;t;t>>=1,x=x*x%p)if(t&1)r=r*x%p;return r;}
@@ -907,7 +924,7 @@ void Union(int x, int y){
 */
 
 void Kruskal() {    
-    ans = 0;    
+    int ans = 0;    
     for (int i = 0; i<len; i++) {    
         if (Find(edge[i].a) != Find(edge[i].b)) {    
             Union(edge[i].a, edge[i].b);    
@@ -1027,15 +1044,14 @@ vector<node> G[maxn];
 bool inqueue[maxn];
 int dist[maxn];
 
-void Init()  
-{  
-    for(int i = 0 ; i < maxn ; ++i){  
+void Init() {  
+    for(int i = 0 ; i < maxn ; ++i) {  
         G[i].clear();  
         dist[i] = INF;  
     }  
 }  
-int SPFA(int s,int e)  
-{  
+
+int SPFA(int s,int e) {  
     int v1,v2,weight;  
     queue<int> Q;  
     memset(inqueue,false,sizeof(inqueue)); // 标记是否在队列中  
@@ -1043,21 +1059,23 @@ int SPFA(int s,int e)
     dist[s] = 0;  
     Q.push(s); // 起点加入队列  
     inqueue[s] = true; // 标记  
-    while(!Q.empty()){  
+    while(!Q.empty()) {  
         v1 = Q.front();  
         Q.pop();  
         inqueue[v1] = false; // 取消标记  
-        for(int i = 0 ; i < G[v1].size() ; ++i){ // 搜索v1的链表  
+        for(int i = 0 ; i < G[v1].size() ; ++i) { // 搜索v1的链表  
             v2 = G[v1][i].vex;  
             weight = G[v1][i].weight;  
-            if(dist[v2] > dist[v1] + weight){ // 松弛操作  
+            if(dist[v2] > dist[v1] + weight) { // 松弛操作  
                 dist[v2] = dist[v1] + weight;  
-                if(inqueue[v2] == false){  // 再次加入队列  
+                if(inqueue[v2] == false) {  // 再次加入队列  
                     inqueue[v2] = true;  
                     //cnt[v2]++;  // 判负环  
                     //if(cnt[v2] > n) return -1;  
                     Q.push(v2);  
-                } } }  
+                }
+            } 
+        }  
     }  
     return dist[e];  
 }
@@ -1070,7 +1088,6 @@ int SPFA(int s,int e)
 
 
 13.(Floyd-Warshall)弗洛伊德算法
-
 /*
     |任意点对最短路算法|
     |求图中任意两点的最短距离的算法|
@@ -1080,6 +1097,7 @@ for (int i = 0; i < n; i++) {   //  初始化为0
     for (int j = 0; j < n; j++)  
         scanf("%lf", &dis[i][j]);  
 }  
+
 for (int k = 0; k < n; k++) {  
     for (int i = 0; i < n; i++) {  
         for (int j = 0; j < n; j++) {  
@@ -1087,6 +1105,7 @@ for (int k = 0; k < n; k++) {
         }  
     }
 }
+
 
 二分图
 14.染色法
@@ -1776,8 +1795,7 @@ int main() {
 29.线段树 
 1）点更新
 
-struct node
-{
+struct node {
     int left, right;
     int max, sum;
 };
@@ -1789,11 +1807,10 @@ int k = 1;
 int p, q;
 string str;
 
-void build(int m, int l, int r)//m 是 树的标号
-{
+void build(int m, int l, int r) //m 是 树的标号{
     tree[m].left = l;
     tree[m].right = r;
-    if (l == r){
+    if (l == r) {
         tree[m].max = a[l];
         tree[m].sum = a[l];
         return;
@@ -1805,51 +1822,41 @@ void build(int m, int l, int r)//m 是 树的标号
     tree[m].sum = tree[m << 1].sum + tree[m << 1 | 1].sum;
 }
 
-void update(int m, int a, int val)//a 是 节点位置， val 是 更新的值（加减的值）
-{
+void update(int m, int a, int val) { //a 是 节点位置， val 是 更新的值（加减的值）
     if (tree[m].left == a && tree[m].right == a){
         tree[m].max += val;
         tree[m].sum += val;
         return;
     }
     int mid = (tree[m].left + tree[m].right) >> 1;
-    if (a <= mid){
+    if (a <= mid) 
         update(m << 1, a, val);
-    }
-    else{
+    else
         update(m << 1 | 1, a, val);
-    }
     tree[m].max = max(tree[m << 1].max, tree[m << 1 | 1].max);
     tree[m].sum = tree[m << 1].sum + tree[m << 1 | 1].sum;
 }
 
-int querySum(int m, int l, int r)
-{
-    if (l == tree[m].left && r == tree[m].right){
+int querySum(int m, int l, int r) {
+    if (l == tree[m].left && r == tree[m].right)
         return tree[m].sum;
-    }
+    
     int mid = (tree[m].left + tree[m].right) >> 1;
-    if (r <= mid){
+    if (r <= mid)
         return querySum(m << 1, l, r);
-    }
-    else if (l > mid){
+    else if (l > mid)
         return querySum(m << 1 | 1, l, r);
-    }
     return querySum(m << 1, l, mid) + querySum(m << 1 | 1, mid + 1, r);
 }
 
-int queryMax(int m, int l, int r)
-{
-    if (l == tree[m].left && r == tree[m].right){
+int queryMax(int m, int l, int r) {
+    if (l == tree[m].left && r == tree[m].right)
         return tree[m].max;
-    }
     int mid = (tree[m].left + tree[m].right) >> 1;
-    if (r <= mid){
+    if (r <= mid)
         return queryMax(m << 1, l, r);
-    }
-    else if (l > mid){
+    else if (l > mid)
         return queryMax(m << 1 | 1, l, r);
-    }
     return max(queryMax(m << 1, l, mid), queryMax(m << 1 | 1, mid + 1, r));
 } 
 
@@ -1866,7 +1873,7 @@ const int maxn = 100010;
 int t,n,q;  
 ll anssum;  
 
-struct node{  
+struct node {  
     ll l,r;  
     ll addv,sum;  
 }tree[maxn<<2];  
@@ -1880,7 +1887,7 @@ void maintain(int id) {
 void pushdown(int id) {  
     if(tree[id].l >= tree[id].r)  
         return ;  
-    if(tree[id].addv){  
+    if(tree[id].addv) {  
         int tmp = tree[id].addv;  
         tree[id<<1].addv += tmp;  
         tree[id<<1|1].addv += tmp;  
@@ -1906,8 +1913,7 @@ void build(int id,ll l,ll r) {
 }  
 
 void updateAdd(int id,ll l,ll r,ll val) {  
-    if(tree[id].l >= l && tree[id].r <= r)  
-    {  
+    if(tree[id].l >= l && tree[id].r <= r) {  
         tree[id].addv += val;  
         tree[id].sum += (tree[id].r - tree[id].l+1)*val;  
         return ;  
@@ -1928,10 +1934,8 @@ void query(int id,ll l,ll r) {
     }  
     pushdown(id);  
     ll mid = (tree[id].l + tree[id].r)>>1;  
-    if(l <= mid)  
-        query(id<<1,l,r);  
-    if(mid < r)  
-        query(id<<1|1,l,r);  
+    if(l <= mid) query(id<<1,l,r);  
+    if(mid < r) query(id<<1|1,l,r);  
     maintain(id);  
 }  
 
@@ -2030,12 +2034,12 @@ int main() {
 #其他
 31.中国剩余定理（孙子定理）
 
-int CRT(int a[],int m[],int n)  {    
+int CRT(int a[],int m[],int n) {    
     int M = 1;    
     int ans = 0;    
     for(int i=1; i<=n; i++)    
         M *= m[i];    
-    for(int i=1; i<=n; i++)  {    
+    for(int i=1; i<=n; i++) {    
         int x, y;    
         int Mi = M / m[i];    
         extend_Euclid(Mi, m[i], x, y);    
@@ -2045,7 +2049,7 @@ int CRT(int a[],int m[],int n)  {
     return ans;    
 }  
 
-void extend_Euclid(int a, int b, int &x, int &y)  {  
+void extend_Euclid(int a, int b, int &x, int &y) {  
     if(b == 0) {  
         x = 1;  
         y = 0;  

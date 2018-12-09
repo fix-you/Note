@@ -588,7 +588,7 @@ if 'alert alert-success' in res.content:
 
 
 
-**Raccoon 的纳新题就全做完了，也顺利进入了ROIS的考核队列。**
+**Raccoon 的纳新题就全做完了，也顺利进入了 ROIS 的考核队列。**
 
 **小目标成功实现，也对得起这几天疯狂做web题了。**
 
