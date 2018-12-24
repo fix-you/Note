@@ -959,7 +959,7 @@ void init() {
     }  
 }  
 int Prim(int s) {  
-    priority_queue<node>Q; // 定义优先队列  
+    priority_queue<node> Q; // 定义优先队列  
     int ans = 0;  
     Q.push(node(s,0));  // 起点加入队列  
     while (!Q.empty()) {   

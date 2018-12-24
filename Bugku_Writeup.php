@@ -1134,3 +1134,246 @@
 # sql注入2
 	全都tm过滤了绝望吗？
 	提示 !,!=,=,+,-,^,%
+
+
+# flag 被盗
+	跟踪了几个TCP流，发现shell.php，后来在TCP流中直接看到了flag
+
+
+# 中国菜刀
+	看了几个数据流，发现了一下内容
+	flag.tar.gz	2016-06-27 08:45:38	203	0666
+	log.txt	2015-06-03 12:18:46	1502	0666
+	news.asp	2014-06-27 03:44:24	365	0666
+	SaveFile.asp	2014-06-27 05:45:08	822	0666
+	testNull.php	2014-07-17 08:06:14	16	0666
+	upload.html	2014-06-27 05:27:46	364	0666
+	webshell.php	2014-07-21 05:52:36	18	0666
+	xiaoma.asp;.jpg	2014-07-04 08:17:18	1312	0666
+
+	猜测 caidao.pcapng 包含了其他文件
+	使用 binwalk 查看一下
+	7747          0x1E43          gzip compressed data, from Unix, last modified: 2016-06-27 08:44:39
+	
+	提取 dd if=caidao.pcapng of=1.gzip skip=7747 bs=1 
+	
+	解压 ➜  CTF tar -xvf 1.gzip 
+	gzip: stdin: decompression OK, trailing garbage ignored
+	flag/
+	flag/flag.txt
+	tar: Child returned status 2
+	tar: Error is not recoverable: exiting now
+
+	可直接导出？以后补充
+
+
+# 这么多数据包
+	打开一看真的是很多数据包，看一下http，没有。
+	题目提示，寻找 getshell 流。一般的 getshell 流的 TCP 的报文中很可能包含 command 这个字段，
+	我们可以通过 【协议 contains "内容"】 来查找 getshell 流
+	tcp contains "command"
+	看到几个tcp
+	再追踪tcp流
+	C:\>type s4cr4t.txt
+	type s4cr4t.txt
+	Q0NURntkb195b3VfbGlrZV9zbmlmZmVyfQ==
+	C:\>shutdown -r -t 100 -m "Stupid Manager!"
+	shutdown -r -t 100 -m "Stupid Manager!"
+	
+	
+# 百越杯 买手机
+	重点学习 zio
+	import hashpumpy
+	import urllib
+	from urlparse import parse_qsl
+	from zio import *
+	import re, string, itertools
+	io = zio(('117.50.13.182', 8888))
+	io.read_until('Command: ')
+	io.writeline('2')
+	io.writeline('9')
+	io.read_until('Your order:\n')
+	c = io.readline('\n')
+	d = parse_qsl(c)
+	hash = d[3][1].strip()
+	pr = 'product=Flag&price=99999&timestamp=%s'%(d[2][1])
+	print hash, pr
+	for i in range(8,32):
+		ret = hashpumpy.hashpump(hash, pr, '&price=233', i)
+		order = '%s&sign=%s' %(ret[1], ret[0])
+		io.writeline('3')
+		io.read_until('\n')
+		io.writeline(order)
+		io.read_until('Command: ')
+
+
+	from pwn import *
+	# context.log_level = 'debug'
+	import hashpumpy
+	p = remote("117.50.13.182",8888)
+
+	p.sendline('2')
+	p.sendline('9')
+	timestamp = p.recvuntil("&sign=")[-22:-6]
+
+	sign = p.recvuntil("\n")
+	sign = sign[:-1]
+	pr = "product=Flag&price=99999&timestamp="+timestamp
+
+	for i in range(8,32):
+		ret = hashpumpy.hashpump(sign,pr,"&price=11",i) 
+		order = '%s&sign=%s'%(ret[1],ret[0])
+		temp = p.recv()
+		if "Well" in temp:
+			print "------------------------------>>>>>",temp
+			exit()
+		p.sendline('3')
+		p.recv()
+		p.sendline(str(order))
+	#flag{Hash_leNgth_eXt3ns1on_attack_!S)_E@sy}
+
+
+# SWPUCTF2018 web3
+	乍一看还以为是文件上传的简单题，后来发现了file.php?file=
+	可以任意读取文件，flag is in f1ag.php
+	信息收集：
+	index.php
+	base.php
+	<?php 
+    	session_start(); 
+	?> 
+
+	function.php
+	<?php 
+		//show_source(__FILE__); 
+		include "base.php"; 
+		header("Content-type: text/html;charset=utf-8"); 
+		error_reporting(0); 
+		function upload_file_do() { 
+			global $_FILES; 
+			$filename = md5($_FILES["file"]["name"].$_SERVER["REMOTE_ADDR"]).".jpg"; 
+			//mkdir("upload",0777); 
+			if(file_exists("upload/" . $filename)) { 
+				unlink($filename); 
+			} 
+			move_uploaded_file($_FILES["file"]["tmp_name"],"upload/" . $filename); 
+			echo '<script type="text/javascript">alert("上传成功!");</script>'; 
+		} 
+		function upload_file() { 
+			global $_FILES; 
+			if(upload_file_check()) { 
+				upload_file_do(); 
+			} 
+		} 
+		function upload_file_check() { 
+			global $_FILES; 
+			$allowed_types = array("gif","jpeg","jpg","png"); 
+			$temp = explode(".",$_FILES["file"]["name"]); 
+			$extension = end($temp); 
+			if(empty($extension)) { 
+				//echo "<h4>请选择上传的文件:" . "<h4/>"; 
+			} 
+			else{ 
+				if(in_array($extension,$allowed_types)) { 
+					return true; 
+				} 
+				else { 
+					echo '<script type="text/javascript">alert("Invalid file!");</script>'; 
+					return false; 
+				} 
+			} 
+		} 
+	?> 
+
+	file.php
+	<?php 
+		header("content-type:text/html;charset=utf-8");  
+		include 'function.php'; 
+		include 'class.php'; 
+		ini_set('open_basedir','/var/www/html/'); 
+		$file = $_GET["file"] ? $_GET['file'] : ""; 
+		if(empty($file)) { 
+			echo "<h2>There is no file to show!<h2/>"; 
+		} 
+		$show = new Show(); 
+		if(file_exists($file)) { 
+			$show->source = $file; 
+			$show->_show(); 
+		} else if (!empty($file)){ 
+			die('file doesn\'t exists.'); 
+		} 
+	?> 
+	
+	class.php
+	<?php
+		class C1e4r {
+			public $test;
+			public $str;
+			public function __construct($name)
+			{
+				$this->str = $name;
+			}
+			public function __destruct()
+			{
+				$this->test = $this->str;
+				echo $this->test;
+			}
+		}
+
+		class Show {
+			public $source;
+			public $str;
+			public function __construct($file) 			{
+				$this->source = $file;
+				echo $this->source;
+			}
+			public function __toString() 			{
+				$content = $this->str['str']->source;
+				return $content;
+			}
+			public function __set($key,$value) 			{
+				$this->$key = $value;
+			}
+			public function _show() 			{
+				if(preg_match('/http|https|file:|gopher|dict|\.\.|f1ag/i',$this->source)) {
+					die('hacker!');
+				} else {
+					highlight_file($this->source);
+				}
+				
+			}
+			public function __wakeup() 			{
+				if(preg_match("/http|https|file:|gopher|dict|\.\./i", $this->source)) {
+					echo "hacker~";
+					$this->source = "index.php";
+				}
+			}
+		}
+		class Test {
+			public $file;
+			public $params;
+			public function __construct() {
+				$this->params = array();
+			}
+			public function __get($key) {
+				return $this->get($key);
+			}
+			public function get($key) {
+				if(isset($this->params[$key])) {
+					$value = $this->params[$key];
+				} else {
+					$value = "index.php";
+				}
+				return $this->file_get($value);
+			}
+			public function file_get($value) {
+				$text = base64_encode(file_get_contents($value));
+				return $text;
+			}
+		}
+	?>
+	upload_file.php
+	<?php 
+		include 'function.php'; 
+		upload_file(); 
+	?> 

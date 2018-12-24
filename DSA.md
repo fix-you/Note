@@ -174,17 +174,15 @@ public:
 
 
 
-## 简单排序
+## 排序
 
 + 
 
 + 排序的稳定性：相同键的键值顺序在排序前后保持不变（即相同值的相对顺序不会被打乱）
-+ 归并排序的额外空间复杂度可以变成$O(1)$，但是非常难，详见 ~> <u>归并排序，内部缓存法</u>
++ 归并排序的额外空间复杂度可以变成 $O(1)$，但是非常难，详见 ~> <u>归并排序，内部缓存法</u>
 + 快速排序可做到稳定性，也很难，详见 ~> <u>01 stable sort</u> （01标准即元素间的性质差异，比如大小，奇偶）
 
-
-
-## 线性排序
+#### 线性排序
 
 + 非基于比较的排序，与被排序的样本的实际数据状况很有关系，所以实际中并不经常使用
 + 时间复杂度$O(n)$ ，额外空间复杂度$O(n)$ 
@@ -230,13 +228,36 @@ int solve(vector<int>& nums){
 }
 ```
 
+### 桶排序
+
+### 计数排序
+
+### 基数排序
+
+### 快排
+
+```c++
+int partion(int arr[], int l, int r) {
+    int j = l;
+    for(int i = l + 1; i <= r; i++) {
+        if(arr[i] < arr[l]) {
+            swap(arr[j+1], arr[i]);
+            j++;
+        }
+    }
+    swap(arr[l], arr[j]);
+    return j;
+}
+
+void quicksort(int arr[], int l, int r) {
+    if(l >= r) return;
+    int p = partion(arr, l, r);
+    quicksort(arr, l, p-1);
+    quicksort(arr, p+1, r);
+}
+```
 
 
-## 桶排序
-
-## 计数排序
-
-## 基数排序
 
 ## 树
 
@@ -255,7 +276,7 @@ int solve(vector<int>& nums){
 
 + 子树是不相交的；
 + 除了根节点，每个结点有且仅有一个父结点；
-+ 一棵 $N$ 个结点的树仅有 $N-1$ 条边
++ 一棵 N 个结点的树仅有 N-1 条边
 
 ### 术语：
 
@@ -317,7 +338,7 @@ int solve(vector<int>& nums){
 
 #### 左儿子右兄弟表示法
 
-## 二叉树
+### 二叉树
 
 任何一个结点均有左右次序之分
 
@@ -330,8 +351,8 @@ int solve(vector<int>& nums){
 #### 结构
 
 ```c++
-struct node{
-    int datd;
+struct node {
+    int date;
     node* left;
     node* right;
 }
@@ -345,6 +366,100 @@ struct node{
 
 
 + 非递归
+
+### 堆
+
+#### 建立
+
+```c++
+typedef struct HeapStruct *MaxHeap;
+struct HeapStruct {
+    int *data;
+    int size;
+    int capacity;
+};
+
+MaxHeap Create(int MaxSize) {
+    MaxHeap H = new HeapStruct;
+    H->data = new int[MaxSize + 1];
+    H->size = 0;
+    H->capacity = MaxSize;
+    H->data[0] = MaxData;  // 哨兵
+    return H;
+}
+
+void Insert(int x) {
+    data[++k] = x;
+    while(k > 1 && data[k/2] < data[k]) {
+        swap(data[k/2], x);
+        k /= 2;
+    }
+}
+```
+
+#### 删除
+
+删掉顶端元素，数组最后一个元素挪上来，
+
+顶端元素不断与两孩子中最大的那个进行交换，直到不能再交换。
+
+```c++
+void delete() {
+    swap(data[k], data[1]);
+    k--;
+    while(2*k < size)
+}
+```
+
+#### 堆排序
+
++ 建堆
++ pop出来
+
+### 哈夫曼树
+
+特点：
+
++ 没有度为1的结点
++ n 个叶子结点的哈夫曼树共有 2n - 1 个结点
++ 哈夫曼树的任意非叶结点的左右子树交换后仍是哈夫曼树
+
+### 线索二叉树
+
+### 平衡二叉树
+
+## Hash
+
+
+
+## 图
+
+### 图的表示
+
+### 图的遍历
+
+### 最短路径
+
+### 最小生成树
+
+### 图匹配
+
+### DAG
+
+### 应用
+
++ 图的割点如何确定
++ 最短路径应用
++ 最小生成树应用
++ 拓扑排序应用
++ 抽象  =>  
++ 差分约束系统
++ 最长嵌套序列问题
++ 套汇问题
++ 路径判定问题
++ 路径计数问题
++ 过桥问题
++ 强连通图判定
 
 
 
@@ -367,3 +482,7 @@ struct node{
 - 2-6 对一组包含10个元素的非递减有序序列，采用直接插入排序排成非递增序列，其可能的比较次数和移动次数分别是： 
 
   > 答案：45,44 **（暂时没搞懂）**
+
+- 引入二叉线索树的目的：加快查找结点的前驱或后继的速度
+
+- 堆排序不太清楚

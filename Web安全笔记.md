@@ -1,6 +1,53 @@
 # Web安全笔记
 
+**我听过的会忘掉，我看过的能记住，我做过的才真正明白。**
+
 ## 每天学点新东西
+
+### CMS 至少自己会搭建
+
+CMS部分搭建，框架部分随便写点什么玩意
+
+```
+Java
+	Stucts2
+	Spring MVC / Spring Boot
+
+PHP
+	ThinkPHP 3
+	ThinkPHP 5
+	CI
+	Laravel -> Symfony
+	Yii
+	Yaf
+
+	DeDeCMS
+	PHPCMS
+	帝国CMS
+	WordPress
+	Drupal
+	Joomla!
+	phpBB
+	Discuz!
+	phpWind
+
+Python
+	Django
+	Flask
+
+Ruby
+	ruby on rails
+
+Nodejs
+	Express / Koa
+	Nuxtjs
+	Eggjs
+
+Golang
+	Iris
+```
+
+
 
 ### OAuth2.0
 
@@ -261,6 +308,10 @@ Enjoy the labs
 +   检索关键的文件，config.php, check.lib.php, xxx.class.php
 
 ## 文件上传
+
+### upload-labs
+
+https://github.com/c0ny1/upload-labs.git
 
 +   基于前端 JS 的验证
 
