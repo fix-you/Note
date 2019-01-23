@@ -1,5 +1,3 @@
-# Raccoon Writeup
-
 ### PHP 后门分析
 
 李大猫在他的 WordPress 博客里发现了被黑客植入的 PHP 后门，快帮他分析分析这个后门要怎么利用吧
@@ -40,9 +38,10 @@ $j6() => function(args) {
 
 此题只需将 `}phpinfo();/*` 进行 base64 编码，再传进去就 OK 了
 
-![1541723641637](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1541723641637.png)
+![1541723641637.png](https://i.loli.net/2018/11/26/5bfb937137af2.png)
 
 
+</br>
 
 ### 抓包和改包
 
@@ -75,6 +74,7 @@ action=readflag
 ```
 
 
+</br>
 
 ### Javascript Tricks
 
@@ -181,6 +181,7 @@ for i in range(N):
 ```
 
 
+</br>
 
 ### The user admin
 
@@ -294,6 +295,8 @@ http://120.78.187.100:8081/?user=php://input&file=class.php&pass=O:4:"Read":1:{s
 ```
 
 
+</br> 
+
 
 ### Easy waf
 
@@ -375,13 +378,12 @@ Table: flag
 
 ==手注版==(吴乾豪提供)  以后再整理一下
 
-![IQMRDL4](C:\Users\LegnaVI\Documents\Tencent Files\1095184193\FileRecv\IQMRDL4.png)
-
-![STNGU9DPB2](C:\Users\LegnaVI\Documents\Tencent Files\1095184193\FileRecv\STNGU9DPB2.png)
-
-![1542284390673](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542284390673.png)
+![4GOPF)YS.png](https://i.loli.net/2018/11/26/5bfb956054080.png)
+![STNGU9DPB2.png](https://i.loli.net/2018/11/26/5bfb956055d0a.png)
+![IQMRDL4.png](https://i.loli.net/2018/11/26/5bfb956057bab.png)
 
 
+</br>
 
 ### 咕咕 shop
 
@@ -393,7 +395,7 @@ Table: flag
 
 HTTP参数污染，简单地讲就是给一个参数赋上两个或两个以上的值。现行的HTTP标准没有提及在遇到多个输入值给相同的参数赋值时应该怎样处理。因此web程序组件在遇到这类问题时采取的方法也不完全相同。在一个HTTP请求中，同一个参数，拥有多个值是合法的。利用此特性，可以作为绕过参数过滤的手段。
 
-URL：http://www.xxxx.com/search.php?id=110&id=911
+假设 URL：http://www.xxxx.com/search.php?id=110&id=911
 
 百度会理解成让百度搜索：110                 #选择了第一个参数,放弃了第二个参数。
 
@@ -405,7 +407,7 @@ URL：http://www.xxxx.com/search.php?id=110&id=911
 
 服务端有可能会将key处理为select 1,2,3,4 from table，从而导致SQL注入。
 
-![1542278011170](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542278011170.png)
+![1542278011170.png](https://i.loli.net/2018/11/26/5bfb93713fad9.png)
 
 **信息收集：**
 
@@ -439,11 +441,11 @@ URL：http://www.xxxx.com/search.php?id=110&id=911
 
 这里还有一个小知识点，form 被 js 中的序列化成字符串，如
 
-![1542443290094](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542443290094.png)
+![1542443290094.png](https://i.loli.net/2018/11/26/5bfb937149c6c.png)
 
 (这种 js 可直接通过 F12 中的终端来运行)
 
-![1542443452913](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542443452913.png)
+![1542443452913.png](https://i.loli.net/2018/11/26/5bfb937147c07.png)
 
 
 
@@ -523,7 +525,7 @@ for i in range(500):
        break
 ```
 
-![1542281973455](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542281973455.png)
+![1542281973455.png](https://i.loli.net/2018/11/26/5bfb9371612ff.png)
 
 得到长度后，就是参数污染了。
 
@@ -582,14 +584,6 @@ if 'alert alert-success' in res.content:
     print "-------------------------Success!------------------------"
 ```
 
-![1542281916199](C:\Users\LegnaVI\AppData\Roaming\Typora\typora-user-images\1542281916199.png)
+![1542281916199.png](https://i.loli.net/2018/11/26/5bfb9371415f4.png)
 
 到此，flag 已经买到了。当时候还没反应过来，想着再买一次，去看一下订单，flag 已经出来了。 
-
-
-
-**Raccoon 的纳新题就全做完了，也顺利进入了 ROIS 的考核队列。**
-
-**小目标成功实现，也对得起这几天疯狂做web题了。**
-
-**扬帆起航！**
