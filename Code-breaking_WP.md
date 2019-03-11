@@ -284,9 +284,13 @@ if (is_php($data)) {
 
 写入一句话后门。
 
+
+
 #### 阻碍
 
-正则匹配式waf，不能写入 `<?` 等必要的符号。
+正则匹配式waf，不能写入 `<?` 等必要的符号。`<script language="php">` 在低版本里或许可以试试，然而 PHP7 已经不支持这个标签了。
+
+
 
 #### 解决方法
 
@@ -300,7 +304,6 @@ preg_match('/^(xdsec)((?:###|\w)+)$/i', $code, $matches);
 
 ph 师傅也单独写了一篇文章讲这个问题 [PHP利用PCRE回溯次数限制绕过某些安全限制](https://www.leavesongs.com/PENETRATION/use-pcre-backtrack-limit-to-bypass-restrict.html)
 
-`<script language="php">` 在低版本里或许可以试试，然而 PHP7 已经不支持这个标签了。
 
 **回溯超过一百万次，返回 false**  [具体回溯过程](https://regex101.com/r/1ecWok/1/debugger)
 

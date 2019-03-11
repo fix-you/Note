@@ -1952,7 +1952,7 @@ function escape(input) {
 
 
 
-## ssrf
+## SSRF
 
 [原链接](https://medium.com/secjuice/php-ssrf-techniques-9d422cb28d51) [改编](http://n3k0sec.top/2018/06/24/PHP-SSRF%E7%BB%95%E8%BF%87tricks/)
 
@@ -2475,10 +2475,6 @@ start attack  # 观察状态码和长度
 
 若 Burp 无法抓取 DVWA 等本地包，代理设置中删除 `不使用代理` ：<u>localhost,127.0.0.1</u> 即可
 
-**全局参数设置和使用**
-
-+ Project option
-
 #### 实例
 
 ##### 目录与文件扫描
@@ -2926,7 +2922,6 @@ nmap -sO -T4 192.168.1.103
 
 13. FTP Bounce 扫描
 (已经不被支持)
-1234567891011121314151617181920212223242526272829303132333435363738394041424344
 ```
 
 #### 三、指纹识别与探测
@@ -2959,7 +2954,6 @@ nmap -O --osscan-limit 192.168.1.103
 
 9. 推测系统并识别
 nmap -O --osscan-guess 192.168.1.103
-123456789101112131415161718192021222324252627
 ```
 
 #### 四、伺机而动
@@ -3575,6 +3569,10 @@ https://dnslytics.com/ip/154.80.253.139
 
 # 旁站
 bjshuxue.com	
+'dbuser' => 'user_bjshuxue',
+'dbpw' => 'cdma2008'
+ftp://154.80.253.139/  # 需要密码连接
+
 pinkewang.com
 # 数据库信息
 [INFO] the back-end DBMS is Microsoft Access
