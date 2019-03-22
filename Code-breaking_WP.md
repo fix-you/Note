@@ -55,7 +55,7 @@ create_function('', $_GET['code']);
 create_function('', '}phpinfo();//')
 ```
 
-为什么可以直接拼接生效呢？我们先看看[源码 1858行](https://github.com/php/php-src/blob/PHP-7.2.1/Zend/zend_builtin_functions.c)
+为什么可以直接拼接生效呢？我们先看看 [源码 1858行](https://github.com/php/php-src/blob/PHP-7.2.1/Zend/zend_builtin_functions.c)
 
 ```c
 #define LAMBDA_TEMP_FUNCNAME	"__lambda_func"
@@ -304,7 +304,6 @@ preg_match('/^(xdsec)((?:###|\w)+)$/i', $code, $matches);
 
 ph 师傅也单独写了一篇文章讲这个问题 [PHP利用PCRE回溯次数限制绕过某些安全限制](https://www.leavesongs.com/PENETRATION/use-pcre-backtrack-limit-to-bypass-restrict.html)
 
-
 **回溯超过一百万次，返回 false**  [具体回溯过程](https://regex101.com/r/1ecWok/1/debugger)
 
 ![屏幕捕获_2019_03_10_17_27_06_882](C:\Users\wywwzjj\Documents\oCam\屏幕捕获_2019_03_10_17_27_06_882.png)
@@ -355,16 +354,6 @@ endif;
 ?>
 ```
 
-#### 预备知识
-
-
-
-#### 目标
-
-
-
-#### 阻碍
-
 
 
 #### 解决方法
@@ -375,13 +364,18 @@ endif;
 2.用户不能指定更多的参数一个
 3.用户不能执行不同的命令
 
-[利用/绕过 PHP escapeshellarg/escapeshellcmd函数](https://www.anquanke.com/post/id/107336)
-
 `htmlspecialchars()`
 
 - ENT_HTML401 - 默认。作为 HTML 4.01 处理代码。
-
 - ENT_QUOTES - 编码双引号和单引号。
+
+```
+& (AND) => &
+" (双引号) => " (当ENT_NOQUOTES没有设置的时候) 
+' (单引号) => ' (当ENT_QUOTES设置) 
+< (小于号) => < 
+> (大于号) => >
+```
 
 对于前头这些字符串
 
@@ -425,6 +419,14 @@ if(';' === preg_replace('/[^\W]+\((?R)?\)/', '', $_GET['code'])) {
     show_source(__FILE__);
 }
 ```
+
+与 2018 RCTF r-cursive 差不多
+
+```php
+';' === preg_replace('/[^\W_]+\((?R)?\)/', NULL, $_GET['cmd']) ? eval($_GET['cmd']) : show_source(__FILE__);
+```
+
+
 
 #### 预备知识
 

