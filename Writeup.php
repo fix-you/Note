@@ -468,38 +468,38 @@
 	如果两个不同的密码经过哈希以后，哈希值都是以“0e"开头的话，PHP将认为这两个哈希值相同。
 
 	常见的payload:
-		QNKCDZO
-		0e830400451993494058024219903391
+	QNKCDZO
+	0e830400451993494058024219903391
 
-		s155964671a
-		0e342768416822451524974117254469
+	s155964671a
+	0e342768416822451524974117254469
 
-		s214587387a
-		0e848240448830537924465865611904
+	s214587387a
+	0e848240448830537924465865611904
 
-		s878926199a
-		0e545993274517709034328855841020
+	s878926199a
+	0e545993274517709034328855841020
 
-		s1091221200a
-		0e940624217856561557816327384675
+	s1091221200a
+	0e940624217856561557816327384675
 
-		s1885207154a
-		0e509367213418206700842008763514
+	s1885207154a
+	0e509367213418206700842008763514
 
-		s1836677006a
-		0e481036490867661113260034900752
+	s1836677006a
+	0e481036490867661113260034900752
 
-		s1184209335a
-		0e072485820392773389523109082030
+	s1184209335a
+	0e072485820392773389523109082030
 
-		s1665632922a
-		0e731198061491163073197128363787
+	s1665632922a
+	0e731198061491163073197128363787
 
-		s1502113478a
-		0e861580163291561247404381396064
+	s1502113478a
+	0e861580163291561247404381396064
 
-		s532378020a
-		0e220463095855511507588041205815
+	s532378020a
+	0e220463095855511507588041205815
 		
 
 # 十六进制与数字比较
@@ -1581,6 +1581,150 @@
 # biscuiti-300
 	https://blog.csdn.net/qq_19876131/article/details/53674972
 	考察知识点：sql注入，php 弱类型比较（两者为空则相等），cbc padding oracle attack
+
+
+
+	<?php
+	error_reporting(0);
+	define("ENC_KEY", "***censored***");
+	define("ENC_METHOD", "aes-128-cbc");
+	
+	if (!extension_loaded('pdo_sqlite')) {
+		header("Content-type: text/plain");
+		echo "PDO Driver for SQLite is not installed.";
+		exit;
+	}
+	if (!extension_loaded('openssl')) {
+		header("Content-type: text/plain");
+		echo "OpenSSL extension is not installed.";
+		exit;
+	}
+	
+	/*
+	Setup:
+	CREATE TABLE user (
+	username VARCHAR(255),
+	enc_password VARCHAR(255),
+	isadmin BOOLEAN
+	);
+	INSERT INTO user VALUES ("admin", "***censored***", 1);
+	*/
+	
+	function auth($enc_password, $input) {
+		$enc_password = base64_decode($enc_password);
+		$iv = substr($enc_password, 0, 16);
+		$c = substr($enc_password, 16);
+		$password = openssl_decrypt($c, ENC_METHOD, ENC_KEY, OPENSSL_RAW_DATA, $iv);
+		return $password == $input;
+	}
+	
+	function mac($input) {
+		$iv = str_repeat("\0", 16);
+		$c = openssl_encrypt($input, ENC_METHOD, ENC_KEY, OPENSSL_RAW_DATA, $iv);
+		return substr($c, -16);
+	}
+	
+	function save_session() {
+		global $SESSION;
+		$j = serialize($SESSION);
+		$u = $j . mac($j);
+		setcookie("JSESSION", base64_encode($u));
+	}
+	
+	function load_session() {
+		global $SESSION;
+		if (!isset($_COOKIE["JSESSION"]))
+			return array();
+		$u = base64_decode($_COOKIE["JSESSION"]);
+		$j = substr($u, 0, -16);
+		$t = substr($u, -16);
+		if (mac($j) !== $t)
+			return array(2);
+		$SESSION = unserialize($j);
+	}
+	
+	function _h($s) {
+		return htmlspecialchars($s, ENT_QUOTES, "UTF-8");
+	}
+	
+	function login_page($message = NULL) {
+	?><!doctype html>
+	<html>
+	<head><title>Login</title></head>
+	<body>
+	<?php
+		if (isset($message)) {
+			echo "  <div>" . _h($message) . "</div>\n";
+		}
+	?>
+	  <form method="POST">
+		<div>
+		  <label>username</label>
+		  <input type="text" name="username">
+		</div>
+		<div>
+		  <label>password</label>
+		  <input type="password" name="password">
+		</div>
+		<input type="submit" value="login">
+	  </form>
+	</body>
+	</html>
+	<?php
+		  exit;
+	}
+	
+	function info_page() {
+		global $SESSION;
+	?><!doctype html>
+	<html>
+	<head><title>Login</title></head>
+	<body>
+	<?php
+		printf("Hello %s\n", _h($SESSION["name"]));
+		if ($SESSION["isadmin"])
+			include("../flag");
+	?>
+	<div><a href="logout.php">Log out</a></div>
+	</body>
+	</html>
+	<?php
+		  exit;
+	}
+	
+	if (isset($_POST['username']) && isset($_POST['password'])) {
+		$username = (string)$_POST['username'];
+		$password = (string)$_POST['password'];
+		$dbh = new PDO('sqlite:users.db');
+		$result = $dbh->query("SELECT username, enc_password from user WHERE username='{$username}'");
+		if (!$result) {
+			login_page("error");
+			$info = $dbh->errorInfo();
+			login_page($info[2]);
+		}
+		$u = $result->fetch(PDO::FETCH_ASSOC);
+		if ($u && auth($u["enc_password"], $password)) {
+			$SESSION["name"] = $u['username'];
+			$SESSION["isadmin"] = $u['isadmin'];
+			save_session();
+			info_page();
+		}
+		else {
+			login_page("error");
+		}
+	}
+	else {
+		load_session();
+		if (isset($SESSION["name"])) {
+			info_page();
+		}
+		else {
+			login_page();
+		}
+	}
+	
+
+
 	from Crypto.Util.number import *
 	from Crypto.Cipher import AES
 	import requests
@@ -2248,7 +2392,7 @@
 	图片只能上传 jpg ，所以直接抓包在后面再个一句话，然后用 fopen() 去包含
 	但是，注意是但是，这里有个坑，不能用 <?php，有 waf，要用 <script language="php">eval($_POST[1])</script>
 	然后 page=uploads/1552805580.jpg%00 自动出 flag，都不需要菜刀
-	这题出的太过死板，<?=?> 是可以的，居然没任何回显，专考 <script language="php"> 这标签了，没意义
+	这题出的太过死板，<?=?> 是可以的，居然没任何回显，专考 <script language="php"> 标签了，没意义
 	有时间自己改一改出个题
 
 
@@ -2662,7 +2806,7 @@
 # jarvisoj Chopper
 	这个代理有点莫名其妙
 	/proxy.php?url=202.5.19.128/proxy.php?url=http://web.jarvisoj.com:32782/admin/trojan.php
-
+	https://skysec.top/2018/08/15/%E4%BB%8E%E4%B8%80%E9%81%93CTF%E9%A2%98%E5%BC%95%E5%8F%91%E7%9A%84%E6%80%9D%E8%80%83/
 
 # jarvisoj babyxss
 	Hint1: csp bypass

@@ -2957,13 +2957,14 @@ class DBMS:
 1. 内网渗透   攻击者单点突破，进入内网后，需进一步扩大成果，可以先扫描整个私有网络空间，发现哪些主机是有利用价值的，例如10.1.1.1/8, 172.16.1.1/12, 192.168.1.1/16
 2. 全网扫描
 
-扫描一个巨大的网络空间，我们最关心的是效率问题，即时间成本。 在足够迅速的前提下，宁可牺牲掉一些准确性。
+扫描一个巨大的网络空间，我们最关心的是效率问题，即时间成本。 
+
+在足够迅速的前提下，宁可牺牲掉一些准确性。
 
 扫描的基本思路是高并发地ping：
 
-```
-`nmap -``v` `-sn -PE -n --min-hostgroup 1024 --min-parallelism 1024 -oX nmap_output.xml www.hackliu.com``/16`
-```
+```shell
+nmap -v -sn -PE -n --min-hostgroup 1024 --min-parallelism 1024 -oX nmap_output.xml www.hackliu.com/16
 
 -sn    不扫描端口，只ping主机
 
@@ -2978,8 +2979,9 @@ class DBMS:
 -oX nmap_output.xml    将结果以XML格式输出，文件名为nmap_output.xml
 
 一旦扫描结束，解析XML文档即可得到哪些IP地址是存活的。
+```
 
-我测试扫描www.hackliu.com/16这B段，65535个IP地址（存活10156），耗时112.03秒
+测试扫描www.hackliu.com/16这B段，65535个IP地址（存活10156），耗时112.03秒
 
 #### 一、主机发现
 
