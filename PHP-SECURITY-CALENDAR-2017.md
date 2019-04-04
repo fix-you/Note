@@ -1,4 +1,10 @@
-# 从 PHP-SECURITY-CALENDAR-2017 入门代码审计
+---
+title: PHP-SECURITY-CALENDAR-Writeup
+top: 0
+date: 2019-03-02 12:10:12
+tags: Writeup
+abstract: 从 PHP-SECURITY-CALENDAR-2017 入门代码审计
+---
 
 ## 1 - Wish List
 
@@ -179,6 +185,34 @@ class HomeController {
     }
 }
 ```
+
+## 4 - False Beard
+
+```php
+class Login {
+    public function __construct($user, $pass) {
+        $this->loginViaXml($user, $pass);
+    }
+
+    public function loginViaXml($user, $pass) {
+        if (
+            (!strpos($user, '<') || !strpos($user, '>')) &&
+            (!strpos($pass, '<') || !strpos($pass, '>'))
+        ) {
+            $format = '<?xml version="1.0"?>' .
+                '<user v="%s"/><pass v="%s"/>';
+            $xml = sprintf($format, $user, $pass);
+            $xmlElement = new SimpleXMLElement($xml);
+            // Perform the actual login.
+            $this->login($xmlElement);
+        }
+    }
+}
+
+new Login($_POST['username'], $_POST['password']);
+```
+
+
 
 ## 5 - Postcard
 
@@ -963,7 +997,7 @@ close           ls              prompt          runique
 
 最终类似的 payload 为：`1%0a%0dDELETE%20test`，其中的 `DELETE` 可替换为其他指令。
 
-# TODO: 加 file 协议或许能上传文件
+### TODO: 加 file 协议或许能上传文件
 
 ## 17 - Mistletoe
 
@@ -1176,7 +1210,9 @@ size=0\073\145\143\150\157\40\47\74\77\160\150\160\40\145\166\141\154\50\44\137\
 
 ![](http://ww1.sinaimg.cn/large/de75fd55gy1g1bxcudmt2j20r30fc0u1.jpg)
 
-### 20 - Stocking
+
+
+## 20 - Stocking
 
 ```php
 set_error_handler(function ($no, $str, $file, $line) {
@@ -1373,3 +1409,14 @@ if(isset($_GET["u"]) && isset($_GET["p"])) {
 }
 ```
 
+
+
+## 24 - Nutcracker
+```php
+@$GLOBALS=$GLOBALS{next}=next($GLOBALS{'GLOBALS'})
+    [$GLOBALS['next']['next']=next($GLOBALS)['GLOBALS']]
+    [$next['GLOBALS']=next($GLOBALS[GLOBALS]['GLOBALS'])
+     [$next['next']]][$next['GLOBALS']=next($next['GLOBALS'])]
+    [$GLOBALS[next]['next']($GLOBALS['next']{'GLOBALS'})]=
+    next(neXt(${'next'}['next']));
+```
