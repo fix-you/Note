@@ -1,5 +1,16 @@
 ## 前言
 
+LeetCode是一个不错的地方。如果你能完成其中50%的题，那么你基本上可以想面哪里就面哪里了。这里，你要知道，一些面试官也是新手，他们也是从网上找一些算法题来考你。所以，你不用太害怕算法题，都是有套路的。比如：
+
+1. 如果是数据排序方面的题，那基本上是和二分查找有关系的。
+2. 如果是在一个无序数组上的搜索或者统计，基本上来说需要动用O(1)时间复杂度的hash数据结构。
+3. 在一堆无序的数据中找top n的算法，基本上来说，就是使用最大堆或是最小堆的数据结构。
+4. 如果是穷举答案相关的题（如八皇后、二叉树等），基本上来说，需要使用深度优先、广度优先或是回溯等递归的思路。
+5. 动态规划要重点准备一下，这样的题很多，如最大和子数组、买卖股票、背包问题、爬楼梯、改字符……这里有一个 [Top 20的动态规划题的列表](https://www.geeksforgeeks.org/top-20-dynamic-programming-interview-questions/) 。
+6. 一些经典的数据结构算法也要看一下，比如，二叉树、链表和数组上的经典算法，LRU算法，Tier树，字符串子串匹配，回文等，这些常见的题都是经常会被考到的。
+
+基本上来说，算法题主要是考察应聘者是否是计算机专业出身的，对于基本的数据结构和算法有没有相应的认识。你做得多了，就是能感觉得到其中的套路和方法的。所以，本质来说，还是要多练多做。
+
 **要刷多少题？**
 
 + 每个类型 10 ~ 20 题（动态规划：多多益善）
@@ -35,7 +46,28 @@
 
 
 
-## 模拟
+**Top 20 Dynamic Programming Interview Questions**
+
+1. [Longest Common Subsequence](https://www.geeksforgeeks.org/dynamic-programming-set-4-longest-common-subsequence/)
+2. [Longest Increasing Subsequence](https://www.geeksforgeeks.org/dynamic-programming-set-3-longest-increasing-subsequence/)
+3. [Edit Distance](https://www.geeksforgeeks.org/dynamic-programming-set-5-edit-distance/)
+4. [Minimum Partition](https://www.geeksforgeeks.org/partition-a-set-into-two-subsets-such-that-the-difference-of-subset-sums-is-minimum/)
+5. [Ways to Cover a Distance](https://www.geeksforgeeks.org/count-number-of-ways-to-cover-a-distance/)
+6. [Longest Path In Matrix](https://www.geeksforgeeks.org/find-the-longest-path-in-a-matrix-with-given-constraints/)
+7. [Subset Sum Problem](https://www.geeksforgeeks.org/dynamic-programming-subset-sum-problem/)
+8. [Optimal Strategy for a Game](https://www.geeksforgeeks.org/dynamic-programming-set-31-optimal-strategy-for-a-game/)
+9. [0-1 Knapsack Problem](https://www.geeksforgeeks.org/dynamic-programming-set-10-0-1-knapsack-problem/)
+10. [Boolean Parenthesization Problem](https://www.geeksforgeeks.org/dynamic-programming-set-37-boolean-parenthesization-problem/)
+11. [Shortest Common Supersequence](https://www.geeksforgeeks.org/shortest-common-supersequence/)
+12. [Matrix Chain Multiplication](https://www.geeksforgeeks.org/dynamic-programming-set-8-matrix-chain-multiplication/)
+13. [Partition problem](https://www.geeksforgeeks.org/dynamic-programming-set-18-partition-problem/)
+14. [Rod Cutting](https://www.geeksforgeeks.org/dynamic-programming-set-13-cutting-a-rod/)
+15. [Coin change problem](https://www.geeksforgeeks.org/dynamic-programming-set-7-coin-change/)
+16. [Word Break Problem](https://www.geeksforgeeks.org/dynamic-programming-set-32-word-break-problem/)
+17. [Maximal Product when Cutting Rope](https://www.geeksforgeeks.org/dynamic-programming-set-36-cut-a-rope-to-maximize-product/)
+18. [Dice Throw Problem](https://www.geeksforgeeks.org/dice-throw-problem/)
+19. [Box Stacking](https://www.geeksforgeeks.org/dynamic-programming-set-21-box-stacking-problem/)
+20. [Egg Dropping Puzzle](https://www.geeksforgeeks.org/dynamic-programming-set-11-egg-dropping-puzzle/)
 
 ## 数学
 

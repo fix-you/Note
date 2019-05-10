@@ -133,7 +133,6 @@ service sshd restart
 ```shell
 ssserver -p 2333 -k login_233 -m aes-256-cfb  # 跑shadowsocks
 ssh -R 0.0.0.0:2333:localhost:2333 root@120.79.1.209  # ssh设置
-
 ```
 ### 访问
 ```shell

