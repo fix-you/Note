@@ -57,10 +57,7 @@ print(pivotIndex([1, 2, 3]))
 # 198. 打家劫舍
 """
 dp[i] 表示抢到第 i 家为止最高金额
-dp[0] 
 dp[i] = max(dp[i-1], dp[i-2] + nums[i])
-
-
 
 def rob(nums):
     n = len(nums)
@@ -90,9 +87,7 @@ print(rob_(test2))
 """
 
 
-
 # 740. 删除与获得点数
-
 """
 给定一个整数数组 nums ，你可以对它进行一些操作。
 每次操作中，选择任意一个 nums[i] ，删除它并获得 nums[i] 的点数。同时，你必须删除每个等于 nums[i] - 1 和 nums[i] + 1 的元素。
@@ -170,7 +165,7 @@ print(deleteAndEarn([2, 2, 3, 3, 3, 4]))
 与爬楼梯类似
 
 def minPathSum(grid):
-    m , n = len(grid), len(grid[0])
+    m, n = len(grid), len(grid[0])
     # dp = [[0] * m] * n 这种用法存的是引用，前面一改变，将全部变化
     dp = [[0 for i in range(m)] for j in range(n)]
     print(dp)
@@ -216,13 +211,20 @@ minPathSum_(test)
 # 416. 分割等和子集
 """
 只需要回答能不能分割，不用求具体的集合。
-换句话来说，就是求出集合能表示多少种和，如果这个和恰好有 sum/2 即可，类似于之前求第n个丑数
-dp[i][j] 为 1 表示前 i 个元素能表示出总和为 j
-dp[-1][j] = False  dp[i][0] = False
-dp[i][j] = dp[i-1][j-nums[i]] or dp[i][j]
-return dp[n-1][sum/2]
+换句话来说，就是求出集合能表示多少种和，如果这个和恰好有 sum / 2 即可，类似于之前求第 n 个丑数
+长度为 n 的数组，用 n - 1 个数能否表示出 sum / 2
 
-但我们并不关心前多少个数，而且这有些重复的状态，可以直接降维
+dp[i][j] 为 True，则说明前 i 个元素能表示出总和为 j 的数。
+前 i 个数至少能表示自己: dp[i][nums[i]] = True,其他为 False
+
+人人为我
+dp[i][j] += dp[i-1][j-nums[i]] or dp[i-1][j]
+
+我为人人
+if dp[i][j]:
+    dp[i+1][nums[i+1] + j] = Ture
+
+但我们并不关心具体前多少个数，而且这有些重复的状态，可直接降维
 
 def canPartition(nums):
     s, n = sum(nums), len(nums)
@@ -256,7 +258,6 @@ dp[i][i] = 1
 dp[i][j] = dp[i+1][j-1] + 2
 不相等
 dp[i][j] = max(dp[i-1][j], dp[i][j+1])
-"""
 
 def longestPalindromeSubseq(s):
     n = len(s)
@@ -275,12 +276,12 @@ def longestPalindromeSubseq(s):
     return dp[0][n-1]
 
 # print(longestPalindromeSubseq('abc'))
-
+'''
 
 
 # 303. 区域和检索 - 数组不可变
 
-"""
+'''
 给定一个整数数组  nums，求出数组从索引 i 到 j  (i ≤ j) 范围内元素的总和，包含 i,  j 两点。
 """
 
@@ -364,3 +365,84 @@ def maxProfit(prices):
 输出: 3 
 解释: 对应的交易状态为: [买入, 卖出, 冷冻期, 买入, 卖出]
 """
+
+
+# 494. 目标和
+'''
+给定一个非负整数数组，a1, a2, ..., an, 和一个目标数，S。现在你有两个符号 + 和 -。
+对于数组中的任意一个整数，你都可以从 + 或 -中选择一个符号添加在前面。
+返回可以使最终数组和为目标数 S 的所有添加符号的方法数。
+
+示例 1:
+输入: nums: [1, 1, 1, 1, 1], S: 3
+输出: 5
+解释:
+-1+1+1+1+1 = 3
++1-1+1+1+1 = 3
++1+1-1+1+1 = 3
++1+1+1-1+1 = 3
++1+1+1+1-1 = 3
+
+一共有5种方法让最终目标和为3。
+
+注意:
+数组的长度不会超过20，并且数组中的值全为正数。
+初始的数组的和不会超过1000。
+保证返回的最终结果为32位整数。
+
+1.直接 dp 法
+dp[i][t] 表示前 i 个数能使得目标和为 t 的方法数
+初始状态,dp[0][0] = 1, 其余都为 0
+dp[i][t] = dp[i - 1][t - arr[i]] + dp[i - 1][t + arr[i]]
+另外，t 可能为负数，直接用数组是不合适的
+
+def findTargetSumWays(nums, S):
+    n = len(nums)
+    s = sum(nums)
+    if s < S: return 0
+    dp = [{} for _ in range(n + 1)]
+    dp[0] = {0 : 1}
+    
+    for i in range(n):
+        for t in dp[i]:
+            if dp[i].get(t, 0) > 0:
+                dp[i + 1][t + nums[i]] = dp[i + 1].get(t + nums[i], 0) + dp[i][t]
+                dp[i + 1][t - nums[i]] = dp[i + 1].get(t - nums[i], 0) + dp[i][t]
+                # dp[i + 1][t + nums[i]] += dp[i][t]
+                # dp[i + 1][t - nums[i]] += dp[i][t]
+    print(dp[n][S])
+
+
+def _findTargetSumWays(nums, S):
+    dp = {0: 1}
+    for num in nums:
+        _dp = {}
+        for t in dp:
+            if dp[t] > 0:
+                _dp[t + num] = _dp.get(t + num, 0) + dp[t]
+                _dp[t - num] = _dp.get(t - num, 0) + dp[t]
+        dp = _dp
+        
+    # 最终的 dp 字典返回了能表示哪些数以及对应的方法数，最终只是查一下表
+    return dp.get(S, 0)
+
+# [{0: 1}, {1: 1, -1: 1}, {2: 1, 0: 1}, {1: 2, -1: 1, 3: 1}, {2: 3, 0: 2, 4: 1}, {1: 5, -1: 2, 3: 4, 5: 1}]
+# findTargetSumWays([0, 0, 0, 0, 0, 0, 0, 0, 1], 1)
+# findTargetSumWays([1, 1, 1, 1, 1], 3)
+# findTargetSumWays([1000], -1000)
+
+_findTargetSumWays([0, 0, 0, 0, 0, 0, 0, 0, 1], 1)
+_findTargetSumWays([1, 1, 1, 1, 1], 3)
+_findTargetSumWays([1000], -1000)
+
+# 2.0-1 背包法
+在数前面填加减号，无非就是划分为两个集合，一个正集合P、一个负集合N
+sum(P) - sum(N) = target
+=> sum(P) - sum(N) + sum(P) + sum(N) = target + sum(P) + sum(N)
+=> 2 * sum(P) = sum + target
+=> sum(P) = (sum + target) / 2
+问题就转换成，这样的 P 集合有多少种
+对于每个元素就变成了有、无两种可能，即 0-1 背包问题
+dp[i][t] 表示前 i 个数表示 t 有多少种方法
+就转变为 416 题的做法了
+'''
