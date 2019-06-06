@@ -106,3 +106,6 @@ iptables -t nat -A POSTROUTING -o ens32 -j MASQUERADE
 iptables -A FORWARD -i wlan0mon -o ens32 -j ACCEPT
 ```
 
+
+
+kali 是个大坑，dhcp 服务折腾半天跑不了，Ubuntu 用同样的配置一下就好了。

