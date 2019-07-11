@@ -1,6 +1,14 @@
 # Note
-Some notes of code.
-xctf平台
+	
+## SCUCTF:
+	1. 一款船细的外部题目 200
+	无验证码，脚本爆破，有上传点，php上传点绕过
+	
+	2. 一道入门的代码审计 170
+	读源码，md5弱类型绕过，file_put_contents
+	备注：// @$_GET['filename']
+	
+## xctf平台
 	```TODO
 	web/JS逆向	https://adworld.xctf.org.cn/task/answer?type=web&number=3&grade=1&id=4810	
 		ref:	https://st98.github.io/diary/posts/2017-10-25-hacklu-ctf-2017.html```
